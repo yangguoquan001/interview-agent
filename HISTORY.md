@@ -78,6 +78,13 @@ src/web/
 1. **复用现有 workflow**: InterviewService 封装 LangGraph 工作流，零业务逻辑改动
 2. **流式输出**: 使用 st.empty() 占位符 + 增量 markdown 更新实现打字机效果
 3. **记录服务**: RecordService 独立于面试流程，按日期聚合历史 .md 文件
+4. **SQLite 连接**: 使用 sqlite3.connect 持久连接，避免 with 上下文关闭数据库
+
+### 待优化项
+
+- T009: 优化用户输入展示延迟
+- T010: 实现 Agent 输出流式显示
+- T011: 修复侧边栏"开始新面试"按钮无反应
 
 ---
 

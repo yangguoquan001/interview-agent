@@ -9,30 +9,45 @@
 - **回答评估**：基于参考文档对用户回答进行评分和反馈
 - **追问答疑**：支持用户针对反馈进行追问，获得深度技术解答
 - **进度保存**：使用 SQLite Checkpoint 保存面试进度，支持中断后恢复
+- **Web 界面**：提供 Streamlit 图形化界面，支持历史记录查看
 
 ## 项目结构
 
 ```
 interview-agent/
+├── main.py                      # CLI 入口文件
+├── web_app.py                   # Web 入口文件 (Streamlit)
+├── pyproject.toml               # 项目依赖配置
+├── .env                         # 环境变量配置
+├── checkpoints.db               # SQLite 状态持久化
 ├── config/
-│   ├── prompts.py      # 提示词模板
-│   └── settings.py    # 配置文件
+│   ├── settings.py              # 配置管理 (文件目录、LLM、面试参数)
+│   └── prompts.py               # 提示词模板 (出题、评估、追问)
 ├── src/
 │   ├── graph/
-│   │   └── workflow.py    # LangGraph 工作流定义
+│   │   └── workflow.py         # LangGraph 工作流定义
 │   ├── nodes/
-│   │   ├── scanner.py    # 扫描知识库文件
-│   │   ├── questioner.py # 生成面试问题
-│   │   ├── evaluator.py  # 评估用户回答
-│   │   ├── chatter.py    # 追问答疑
-│   │   └── saver.py      # 保存记录
+│   │   ├── scanner.py          # 扫描知识库文件
+│   │   ├── questioner.py      # 生成面试问题
+│   │   ├── evaluator.py       # 评估用户回答
+│   │   ├── chatter.py         # 追答题疑
+│   │   └── saver.py           # 保存面试记录
 │   ├── schemas/
-│   │   ├── data_models.py
-│   │   ├── states.py
-│   │   └── enums.py
-│   └── utils/
-├── main.py             # 入口文件
-└── .env               # 环境变量配置
+│   │   ├── states.py          # AgentState 定义
+│   │   ├── data_models.py     # Pydantic 数据模型
+│   │   └── enums.py           # 枚举类型 (难度等级)
+│   ├── utils/
+│   │   ├── llm_fatory.py      # LLM 实例工厂
+│   │   ├── files_ops.py       # 文件操作工具
+│   │   └── database.py        # 数据库工具
+│   └── web/                   # Streamlit Web 模块
+│       ├── services/
+│       │   ├── records.py     # 历史记录读取服务
+│       │   └── interview.py   # 面试服务封装
+│       └── components/
+│           ├── sidebar.py     # 左侧栏组件
+│           └── chat.py        # 聊天窗口组件
+└── records/                    # 面试记录输出目录
 ```
 
 ## 快速开始
@@ -49,19 +64,25 @@ LLM_MODEL_NAME=gpt-4o-mini
 
 ### 2. 配置知识库目录
 
-在 `config/settings.py` 中设置 `FILE_DIRS`：
+在 `.env` 中设置 `FILE_DIRS`（多个目录用逗号分隔）：
 
-```python
-FILE_DIRS = ["path/to/your/knowledge/docs"]
+```env
+FILE_DIRS = ["path/to/your/knowledge/docs1", "path/to/docs2"]
 ```
 
 ### 3. 运行
 
 ```bash
+# CLI 模式
 python main.py
+
+# Web 模式
+python -m streamlit run web_app.py
 ```
 
 ## 使用流程
+
+### CLI 模式
 
 1. **启动**：运行 `main.py`，自动扫描知识库
 2. **答题**：根据 AI 提出的面试题输入回答
@@ -69,8 +90,19 @@ python main.py
 4. **追问**：可选择输入追问或输入 `next` 进入下一题
 5. **记录**：每轮问答自动保存到 `records/` 目录
 
-## TODO
+### Web 模式
 
-- [ ] **Web 界面**：开发图形化界面，提升用户体验
-- [ ] **每日定时自动生成面试清单**：配置定时任务，每日自动生成面试题并通知用户
-- [ ] **简历+JD 模拟面试**：根据用户简历和目标职位 JD 生成针对性面试问题
+1. **启动**：运行 `web_app.py`，打开浏览器访问
+2. **Sidebar**：左侧显示历史面试记录（按日期分组）
+3. **开始面试**：点击"开始面试"按钮
+4. **答题**：在聊天窗口输入回答
+5. **评估**：AI 流式输出评估反馈
+6. **追问**：输入追问或输入 `next` 进入下一题
+
+## 待优化项
+
+- [ ] 优化用户输入展示延迟
+- [ ] 实现 Agent 输出流式显示
+- [ ] 修复侧边栏"开始新面试"按钮
+- [ ] 每日定时自动生成面试清单
+- [ ] 简历+JD 模拟面试功能
