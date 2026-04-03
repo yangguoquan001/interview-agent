@@ -14,7 +14,7 @@ def generate_questions_node(state: AgentState) -> str:
     if not state["files_to_read"]:
         return END
 
-    difficulty_level = random.choice(list(DifficultyLevel.__members.values__()))
+    difficulty_level = random.choice(list(DifficultyLevel.__members__.values()))
     difficulty_desc = {
         DifficultyLevel.EASY.value: "侧重于基础概念的理解、基本用法及核心流程。考察候选人是否掌握了该技术点的‘是什么’和‘怎么用’。",
         DifficultyLevel.MEDIUM.value: "侧重于实战应用、性能优化或常见坑点。要求结合业务场景，考察候选人解决实际问题的能力。",

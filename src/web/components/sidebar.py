@@ -13,8 +13,6 @@ def render_sidebar():
             st.info("暂无面试记录")
             return
 
-        selected_file = st.session_state.get("selected_record")
-
         for date_str, records in records_by_date.items():
             with st.expander(f"📅 {date_str}", expanded=True):
                 for record in records:

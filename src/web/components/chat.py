@@ -1,4 +1,5 @@
 import streamlit as st
+from langchain_core.messages import AIMessage
 from src.web.services.interview import InterviewService
 from src.web.services.records import RecordService
 
@@ -41,9 +42,26 @@ def render_chat_window():
             st.markdown(msg["content"])
 
     if not st.session_state["interview_started"]:
-        if st.button("开始面试"):
+        if st.button("开始面试", use_container_width=True, type="primary"):
             st.session_state["interview_started"] = True
             st.session_state["messages"] = []
+
+            service = st.session_state["interview_service"]
+
+            with st.spinner("正在初始化面试..."):
+                initial_input = service.get_initial_input()
+
+                for event in service.app.stream(
+                    initial_input, service.get_config(), stream_mode="updates"
+                ):
+                    for node_name, values in event.items():
+                        if "messages" in values:
+                            last_msg = values["messages"][-1]
+                            if isinstance(last_msg, AIMessage):
+                                st.session_state["messages"].append(
+                                    {"role": "assistant", "content": last_msg.content}
+                                )
+
             st.rerun()
 
     if st.session_state["interview_started"]:

@@ -15,6 +15,9 @@
 | T004 | ~~开发 Streamlit Web 界面~~ | ~~completed~~ | web_app.py |
 | T005 | 支持多文件知识库管理界面 | pending | config/settings.py |
 | T006 | ~~面试记录历史查看功能~~ | ~~completed~~ | src/web/components/sidebar.py |
+| T009 | 优化用户输入展示延迟 | pending | src/web/components/chat.py |
+| T010 | 实现 Agent 输出流式显示 | pending | src/web/components/chat.py |
+| T011 | 修复侧边栏"开始新面试"按钮无反应 | pending | src/web/components/sidebar.py |
 
 ## 优先级 P2 - 规划中
 

@@ -1,4 +1,5 @@
 from typing import Generator, Iterator
+import sqlite3
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 import time
@@ -11,12 +12,14 @@ class InterviewService:
         self.db_path = db_path
         self._app = None
         self._config = None
+        self._conn = None
 
     @property
     def app(self):
         if self._app is None:
-            with SqliteSaver.from_conn_string(self.db_path) as saver:
-                self._app = create_graph(saver)
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._saver = SqliteSaver(self._conn)
+            self._app = create_graph(self._saver)
         return self._app
 
     def get_config(self, thread_id: str = None):
@@ -26,9 +29,8 @@ class InterviewService:
             self._config = {"configurable": {"thread_id": thread_id}}
         return self._config
 
-    def start_new_interview(self) -> Generator[str, None, None]:
-        config = self.get_config()
-        initial_input = {
+    def get_initial_input(self):
+        return {
             "files_to_read": [],
             "messages": [],
             "current_file": "",
@@ -37,8 +39,12 @@ class InterviewService:
             "feedback": "",
             "topic": "",
             "difficulty": "",
-            "thread_id": config["configurable"]["thread_id"],
+            "thread_id": self.get_config()["configurable"]["thread_id"],
         }
+
+    def start_new_interview(self) -> Generator[str, None, None]:
+        config = self.get_config()
+        initial_input = self.get_initial_input()
 
         for event in self.app.stream(initial_input, config, stream_mode="updates"):
             for node_name, values in event.items():
