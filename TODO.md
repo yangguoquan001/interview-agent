@@ -14,7 +14,7 @@
 |------|----------|------|------|
 | T004 | ~~开发 Streamlit Web 界面~~ | ~~completed~~ | web_app.py |
 | T005 | 支持多文件知识库管理界面 | pending | config/settings.py |
-| T006 | 面试记录历史查看功能 | pending | records/ |
+| T006 | ~~面试记录历史查看功能~~ | ~~completed~~ | src/web/components/sidebar.py |
 
 ## 优先级 P2 - 规划中
 

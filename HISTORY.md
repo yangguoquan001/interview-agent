@@ -52,8 +52,37 @@ src/
 
 ---
 
+## 2024-04-03 - Streamlit Web UI 开发
+
+### Web 模块架构
+
+```
+src/web/
+├── services/
+│   ├── records.py     # 历史记录读取服务
+│   └── interview.py  # 面试服务封装 (复用 LangGraph)
+└── components/
+    ├── sidebar.py     # 左侧栏 - 按日期显示历史记录
+    └── chat.py        # 右侧聊天窗口 - 流式输出
+```
+
+### 功能实现
+
+- **Sidebar**: 按日期分组显示 `records/` 目录下的 .md 文件
+- **聊天窗口**: Agent 左，用户右，支持流式打字效果 (st.empty() + 增量更新)
+- **模式切换**: 支持"查看历史记录"和"开始新面试"两种模式
+- **状态管理**: 复用 Streamlit session_state 存储消息和服务实例
+
+### 技术决策
+
+1. **复用现有 workflow**: InterviewService 封装 LangGraph 工作流，零业务逻辑改动
+2. **流式输出**: 使用 st.empty() 占位符 + 增量 markdown 更新实现打字机效果
+3. **记录服务**: RecordService 独立于面试流程，按日期聚合历史 .md 文件
+
+---
+
 ## 未来规划
 
-- Web UI: Streamlit
+- ~~Web UI: Streamlit~~ 已实现
 - 定时任务: 每日面试提醒
 - 简历面试: JD 匹配

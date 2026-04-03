@@ -16,7 +16,7 @@
 | **应用监控** | langsmith | >=0.7.23 |
 | **数据校验** | pydantic | >=2.12.5 |
 | **配置管理** | pydantic-settings | >=2.13.1 |
-| **Web UI** | streamlit | >=1.56.0 (待开发) |
+| **Web UI** | streamlit | >=1.56.0 (已实现) |
 | **Python 版本** | Python | >=3.12 |
 
 ## 3. 项目结构
@@ -35,19 +35,27 @@ interview-agent/
 │   │   └── workflow.py          # LangGraph 工作流定义
 │   ├── nodes/
 │   │   ├── scanner.py           # 扫描知识库文件
-│   │   ├── questioner.py        # 生成面试问题
-│   │   ├── evaluator.py         # 评估用户回答
-│   │   ├── chatter.py           # 追答题疑
-│   │   └── saver.py             # 保存面试记录
+│   │   ├── questioner.py       # 生成面试问题
+│   │   ├── evaluator.py        # 评估用户回答
+│   │   ├── chatter.py          # 追答题疑
+│   │   └── saver.py            # 保存面试记录
 │   ├── schemas/
-│   │   ├── states.py            # AgentState 定义
-│   │   ├── data_models.py       # Pydantic 数据模型
-│   │   └── enums.py             # 枚举类型 (难度等级)
-│   └── utils/
-│       ├── llm_fatory.py        # LLM 实例工厂
-│       ├── files_ops.py         # 文件操作工具
-│       └── database.py          # 数据库工具
-└── records/                     # 面试记录输出目录
+│   │   ├── states.py          # AgentState 定义
+│   │   ├── data_models.py     # Pydantic 数据模型
+│   │   └── enums.py           # 枚举类型 (难度等级)
+│   ├── utils/
+│   │   ├── llm_fatory.py      # LLM 实例工厂
+│   │   ├── files_ops.py       # 文件操作工具
+│   │   └── database.py       # 数据库工具
+│   └── web/                   # Streamlit Web 模块
+│       ├── services/
+│       │   ├── records.py     # 历史记录读取服务
+│       │   └── interview.py  # 面试服务封装
+│       └── components/
+│           ├── sidebar.py     # 左侧栏组件
+│           └── chat.py        # 聊天窗口组件
+├── web_app.py                 # Streamlit Web 入口
+└── records/                   # 面试记录输出目录
 ```
 
 ## 4. 核心模块
