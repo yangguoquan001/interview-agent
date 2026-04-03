@@ -12,7 +12,7 @@
 
 | 序号 | 任务描述 | 状态 | 备注 |
 |------|----------|------|------|
-| T004 | 开发 Streamlit Web 界面 | pending | main.py -> web_app.py |
+| T004 | ~~开发 Streamlit Web 界面~~ | ~~completed~~ | web_app.py |
 | T005 | 支持多文件知识库管理界面 | pending | config/settings.py |
 | T006 | 面试记录历史查看功能 | pending | records/ |
 
