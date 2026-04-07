@@ -25,9 +25,3 @@ def render_sidebar():
                         st.session_state["selected_record"] = str(record.file_path)
                         st.session_state["view_mode"] = "record"
                         st.rerun()
-
-        st.divider()
-        if st.button("🎯 开始新面试", use_container_width=True):
-            st.session_state["view_mode"] = "interview"
-            st.session_state["selected_record"] = None
-            st.rerun()
