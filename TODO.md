@@ -20,6 +20,7 @@
 | T011 | 修复侧边栏"开始新面试"按钮无反应 | pending | src/web/components/sidebar.py |
 | T012 | 添加终止当前面试按钮 (终止后不保存) | pending | src/web/components/chat.py |
 | T013 | 将"下一题"从输入改为按钮 | pending | src/web/components/chat.py |
+| T014 | 支持跳过当前问题 (不消耗次数) | pending | src/web/components/chat.py |
 
 ## 优先级 P2 - 规划中
 
