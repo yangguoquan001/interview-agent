@@ -1,8 +1,8 @@
-from typing import Generator, Iterator
 import sqlite3
-from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.checkpoint.sqlite import SqliteSaver
 import time
+
+from langchain_core.messages import BaseMessageChunk
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from src.graph.workflow import create_graph
 
@@ -42,55 +42,17 @@ class InterviewService:
             "thread_id": self.get_config()["configurable"]["thread_id"],
         }
 
-    def start_new_interview(self) -> Generator[str, None, None]:
-        config = self.get_config()
-        initial_input = self.get_initial_input()
-
-        for event in self.app.stream(initial_input, config, stream_mode="updates"):
-            for node_name, values in event.items():
-                if "messages" in values:
-                    last_msg = values["messages"][-1]
-                    if isinstance(last_msg, AIMessage):
-                        yield last_msg.content
-
     def get_current_state(self, config=None):
         if config is None:
             config = self.get_config()
         return self.app.get_state(config)
 
-    def resume_interview(self) -> str:
+    def stream_out_tokens(self, input_data, node_names):
         config = self.get_config()
-        state = self.get_current_state(config)
-        if state and state.next:
-            for event in self.app.stream(None, config, stream_mode="updates"):
-                for node_name, values in event.items():
-                    if "messages" in values:
-                        last_msg = values["messages"][-1]
-                        if isinstance(last_msg, AIMessage):
-                            return last_msg.content
-        return ""
-
-    def submit_answer(self, answer: str) -> Generator[str, None, None]:
-        config = self.get_config()
-        self.app.update_state(
-            config, {"messages": [HumanMessage(content=answer)], "answer": answer}
-        )
-        for event in self.app.stream(None, config, stream_mode="updates"):
-            for node_name, values in event.items():
-                if "messages" in values:
-                    last_msg = values["messages"][-1]
-                    if isinstance(last_msg, AIMessage):
-                        yield last_msg.content
-
-    def continue_interview(self, user_input: str) -> Generator[str, None, None]:
-        config = self.get_config()
-        self.app.update_state(config, {"messages": [HumanMessage(content=user_input)]})
-        for event in self.app.stream(None, config, stream_mode="updates"):
-            for node_name, values in event.items():
-                if "messages" in values:
-                    last_msg = values["messages"][-1]
-                    if isinstance(last_msg, AIMessage):
-                        yield last_msg.content
-
-    def next_question(self) -> Generator[str, None, None]:
-        return self.continue_interview("next")
+        for msg_chunk, metadata in self.app.stream(input_data, config, stream_mode="messages"):
+            node_name = metadata.get("langgraph_node")
+            if node_name in node_names:
+                # 过滤掉节点结束时发出的完整 Message，只处理打字机过程中的 Chunk
+                if isinstance(msg_chunk, BaseMessageChunk):
+                    if hasattr(msg_chunk, "content") and msg_chunk.content:
+                        yield msg_chunk.content

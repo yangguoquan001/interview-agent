@@ -11,7 +11,7 @@ def evaluate_node(state: AgentState):
     with open(state["current_file"], "r", encoding="utf-8") as f:
         content = f.read()
     
-    llm = get_chat_model()
+    llm = get_chat_model(streaming=True)
     system_prompt = EVALUATOR_SYSTEM_PROMPT
     prompt = EVALUATOR_PROMPT_TEMPLATE.format(
         difficulty_level=state["difficulty"],

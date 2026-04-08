@@ -37,7 +37,8 @@ def save_node(state: AgentState):
     for msg in state["messages"]:
         if isinstance(msg, SystemMessage):
             # 这里的 System Prompt 可以选存或不存，建议存一下背景
-            md_lines.append(f"> **系统指令**: {msg.content}\n")
+            # md_lines.append(f"> **系统指令**: {msg.content}\n")
+            continue
         elif isinstance(msg, HumanMessage):
             # 过滤掉控制指令如 "next"
             if msg.content.lower().strip() not in ["next", "n", "下一题"]:
