@@ -76,16 +76,17 @@ def render_chat_window():
 
     if st.session_state["interview_started"]:
         if st.session_state.get("generating_question", False):
-            with st.chat_message("assistant"):
-                service = st.session_state["interview_service"]
-                initial_input = service.get_initial_input()
-                generator = service.stream_out_tokens(initial_input, ["questioner"])
-                response = st.write_stream(generator)
-                st.session_state["messages"].append(
-                    {"role": "assistant", "content": response}
-                )
+            with st.spinner("🔍 正在根据知识库生成面试题..."):
+                with st.chat_message("assistant"):
+                    service = st.session_state["interview_service"]
+                    initial_input = service.get_initial_input()
+                    generator = service.stream_out_tokens(initial_input, ["questioner"])
+                    response = st.write_stream(generator)
+                    st.session_state["messages"].append(
+                        {"role": "assistant", "content": response}
+                    )
 
-            st.session_state["generating_question"] = False
+                st.session_state["generating_question"] = False
             st.rerun()
 
         # === 阶段 2: 面试进行中 ===
