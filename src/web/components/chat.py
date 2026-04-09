@@ -71,25 +71,21 @@ def render_chat_window():
             if st.button("开始面试", type="primary"):
                 st.session_state["interview_started"] = True
                 st.session_state["messages"] = []  # 清空旧消息
-                st.session_state["generating_first_question"] = True # 新增一个标记，表示需要出第一题
-                st.rerun() # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
+                st.session_state["generating_question"] = True
+                st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
 
     if st.session_state["interview_started"]:
-        # --- 新增逻辑：专门处理第一题的流式输出 ---
-        if st.session_state.get("generating_first_question", False):
+        if st.session_state.get("generating_question", False):
             with st.chat_message("assistant"):
                 service = st.session_state["interview_service"]
                 initial_input = service.get_initial_input()
                 generator = service.stream_out_tokens(initial_input, ["questioner"])
                 response = st.write_stream(generator)
-                st.session_state["messages"].append({
-                    "role": "assistant",
-                    "content": response
-                })
-                
-            # 第一题生成完毕，关闭标记，再次 rerun 进入等待用户输入的状态
-            st.session_state["generating_first_question"] = False
-            # 重新执行脚本，更新界面显示 Agent 生成的问题
+                st.session_state["messages"].append(
+                    {"role": "assistant", "content": response}
+                )
+
+            st.session_state["generating_question"] = False
             st.rerun()
 
         # === 阶段 2: 面试进行中 ===
@@ -109,7 +105,9 @@ def render_chat_window():
                     prompt = st.chat_input("请输入你的回答...")
                     if prompt:
                         # 1. 先把用户回答加入消息历史
-                        st.session_state["messages"].append({"role": "user", "content": prompt})
+                        st.session_state["messages"].append(
+                            {"role": "user", "content": prompt}
+                        )
                         # 立即在界面上回显用户输入
                         with st.chat_message("user"):
                             st.markdown(prompt)
@@ -117,17 +115,22 @@ def render_chat_window():
                         # 2. 调用 Service 提交回答，获取流式响应
                         service = st.session_state["interview_service"]
                         config = service.get_config()
-        
+
                         # 这里的字典 key 必须和你定义的 AgentState 保持一致
                         service.app.update_state(
-                            config, 
-                            {"messages": [HumanMessage(content=prompt)], "user_answer": prompt} 
+                            config,
+                            {
+                                "messages": [HumanMessage(content=prompt)],
+                                "user_answer": prompt,
+                            },
                         )
                         with st.chat_message("assistant"):
                             generator = service.stream_out_tokens(None, ["evaluator"])
                             response = st.write_stream(generator)
                             # 3. 把 AI 评估结果加入消息历史
-                            st.session_state["messages"].append({"role": "assistant", "content": response})
+                            st.session_state["messages"].append(
+                                {"role": "assistant", "content": response}
+                            )
 
                         # 4. 触发 rerun，让 Workflow 继续执行到下一个节点
                         st.rerun()
@@ -139,23 +142,26 @@ def render_chat_window():
                 elif current_node == "chat_node":
                     prompt = st.chat_input("输入 'next' 进入下一题，或输入你的追问...")
                     if prompt:
-                        # 1. 先把用户输入加入消息历史
-                        st.session_state["messages"].append(
-                            {"role": "user", "content": prompt}
-                        )
-                        with st.chat_message("user"):
-                            st.markdown(prompt)
+                        # 判断是否是进入下一题
+                        is_next = prompt.lower().strip() in ["next", "n", "下一题"]
+                        
                         service = st.session_state["interview_service"]
                         config = service.get_config()
                         service.app.update_state(
                             config, 
                             {"messages": [HumanMessage(content=prompt)], "user_answer": prompt} 
                         )
-                        with st.chat_message("assistant"):
-                            generator = service.stream_out_tokens(None, ["chat_node", "questioner"])
-                            response = st.write_stream(generator)
-                            st.session_state["messages"].append({"role": "assistant", "content": response})
-                        st.rerun()
+                        
+                        if is_next:
+                            st.session_state["messages"] = []
+                            st.session_state["generating_question"] = True
+                            st.rerun()
+                        else:
+                            with st.chat_message("assistant"):
+                                generator = service.stream_out_tokens(None, ["chat_node", "questioner"])
+                                response = st.write_stream(generator)
+                                st.session_state["messages"].append({"role": "assistant", "content": response})
+                            st.rerun()
 
             # === 阶段 3: 面试完成 ===
             # state.next 为空，说明 Workflow 已完成所有节点

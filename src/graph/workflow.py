@@ -14,7 +14,7 @@ def create_graph(checkpointer):
     workflow.add_node("scanner", scan_repositories_node)
     workflow.add_node("questioner", generate_questions_node)
     workflow.add_node("evaluator", evaluate_node)
-    workflow.add_node("chat_node", chat_node) 
+    workflow.add_node("chat_node", chat_node)
     workflow.add_node("saver", save_node)
 
     workflow.set_entry_point("scanner")
@@ -28,33 +28,29 @@ def create_graph(checkpointer):
         user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
         if not user_messages:
             return "chat_node"
-        
+
         last_user_input = user_messages[-1].content.lower().strip()
-        
+
         # 2. 如果用户说“下一题”，走 saver
         if last_user_input in ["next", "n", "下一题"]:
             return "go_save"
-        
+
         # 3. 否则，认为是在追问，走 chat_node
         return "chat_node"
 
     workflow.add_conditional_edges(
-        "evaluator",
-        router,
-        {"go_save": "saver", "chat_node": "chat_node"}
+        "evaluator", router, {"go_save": "saver", "chat_node": "chat_node"}
     )
 
     workflow.add_conditional_edges(
-        "chat_node",
-        router,
-        {"go_save": "saver", "chat_node": "chat_node"}
+        "chat_node", router, {"go_save": "saver", "chat_node": "chat_node"}
     )
 
-    workflow.add_conditional_edges(
-        "saver",
-        lambda state: "questioner" if state["files_to_read"] else END,
-        {"questioner": "questioner", END: END}
-    )
-    
+    workflow.add_edge("saver", "scanner")  # 直接跳转到 scanner 重新扫描
+
     # 在评估后和聊天前中断，等待用户输入
-    return workflow.compile(checkpointer=checkpointer, interrupt_before=["evaluator", "chat_node"], interrupt_after=["evaluator", "chat_node"] )
+    return workflow.compile(
+        checkpointer=checkpointer,
+        interrupt_before=["evaluator", "chat_node"],
+        interrupt_after=["evaluator", "chat_node"],
+    )
