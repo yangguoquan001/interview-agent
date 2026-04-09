@@ -76,8 +76,8 @@ def render_chat_window():
 
     if st.session_state["interview_started"]:
         if st.session_state.get("generating_question", False):
-            with st.spinner("🔍 正在根据知识库生成面试题..."):
-                with st.chat_message("assistant"):
+            with st.chat_message("assistant"):
+                with st.spinner("🔍 正在根据知识库生成面试题..."):
                     service = st.session_state["interview_service"]
                     initial_input = service.get_initial_input()
                     generator = service.stream_out_tokens(initial_input, ["questioner"])
@@ -143,11 +143,12 @@ def render_chat_window():
                 elif current_node == "chat_node":
                     prompt = st.chat_input("输入 'next' 进入下一题，或输入你的追问...")
                     if prompt:
-                        # 判断是否是进入下一题
+                        # 1. 获取输入并判断意图
                         is_next = prompt.lower().strip() in ["next", "n", "下一题"]
-
                         service = st.session_state["interview_service"]
                         config = service.get_config()
+
+                        # 2. 更新状态，将用户的输入推送到 LangGraph 的 messages 中
                         service.app.update_state(
                             config,
                             {
@@ -156,16 +157,39 @@ def render_chat_window():
                             },
                         )
 
+                        # --- 分支 A: 进入下一题 ---
                         if is_next:
+                            # 清空当前界面的对话历史（准备显示新题）
                             st.session_state["messages"] = []
-                            st.session_state["generating_question"] = True
-                            st.rerun()
-                        else:
+                            
                             with st.chat_message("assistant"):
-                                generator = service.stream_out_tokens(
-                                    None, ["chat_node", "questioner"]
-                                )
+                                with st.spinner("💾 正在保存记录并生成下一题..."):
+                                    # ✅ 关键：这里调用 stream_out_tokens 并迭代它
+                                    # Graph 运行路径：router -> saver -> scanner -> questioner
+                                    generator = service.stream_out_tokens(None, ["questioner"])
+                                    response = st.write_stream(generator)
+                                    
+                                    # 将新出的题目存入历史
+                                    st.session_state["messages"].append(
+                                        {"role": "assistant", "content": response}
+                                    )
+                            st.rerun()
+
+                        # --- 分支 B: 追问/答疑 ---
+                        else:
+                            # 显示用户自己的追问内容
+                            st.session_state["messages"].append(
+                                {"role": "user", "content": prompt}
+                            )
+                            with st.chat_message("user"):
+                                st.markdown(prompt)
+
+                            with st.chat_message("assistant"):
+                                # ✅ 关键：这里监听的是 "chat_node"
+                                # Graph 运行路径：router -> chat_node
+                                generator = service.stream_out_tokens(None, ["chat_node"])
                                 response = st.write_stream(generator)
+                                
                                 st.session_state["messages"].append(
                                     {"role": "assistant", "content": response}
                                 )
