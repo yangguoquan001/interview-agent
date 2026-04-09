@@ -145,23 +145,30 @@ def render_chat_window():
                     if prompt:
                         # 判断是否是进入下一题
                         is_next = prompt.lower().strip() in ["next", "n", "下一题"]
-                        
+
                         service = st.session_state["interview_service"]
                         config = service.get_config()
                         service.app.update_state(
-                            config, 
-                            {"messages": [HumanMessage(content=prompt)], "user_answer": prompt} 
+                            config,
+                            {
+                                "messages": [HumanMessage(content=prompt)],
+                                "user_answer": prompt,
+                            },
                         )
-                        
+
                         if is_next:
                             st.session_state["messages"] = []
                             st.session_state["generating_question"] = True
                             st.rerun()
                         else:
                             with st.chat_message("assistant"):
-                                generator = service.stream_out_tokens(None, ["chat_node", "questioner"])
+                                generator = service.stream_out_tokens(
+                                    None, ["chat_node", "questioner"]
+                                )
                                 response = st.write_stream(generator)
-                                st.session_state["messages"].append({"role": "assistant", "content": response})
+                                st.session_state["messages"].append(
+                                    {"role": "assistant", "content": response}
+                                )
                             st.rerun()
 
             # === 阶段 3: 面试完成 ===
