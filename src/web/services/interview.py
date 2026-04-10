@@ -47,12 +47,9 @@ class InterviewService:
             config = self.get_config()
         return self.app.get_state(config)
 
-    def stream_out_tokens(self, input_data, node_names):
+    def stream_out_tokens(self, input_data):
         config = self.get_config()
         for msg_chunk, metadata in self.app.stream(input_data, config, stream_mode="messages"):
-            node_name = metadata.get("langgraph_node")
-            if node_name in node_names:
-                # 过滤掉节点结束时发出的完整 Message，只处理打字机过程中的 Chunk
-                if isinstance(msg_chunk, BaseMessageChunk):
-                    if hasattr(msg_chunk, "content") and msg_chunk.content:
-                        yield msg_chunk.content
+            if isinstance(msg_chunk, BaseMessageChunk):
+                if hasattr(msg_chunk, "content") and msg_chunk.content:
+                    yield msg_chunk.content

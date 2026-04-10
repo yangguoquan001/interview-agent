@@ -24,18 +24,9 @@ def create_graph(checkpointer):
     # TODO：更加格式化的开始下一题
     # 评价后的循环：是继续聊天还是下一题？
     def router(state: AgentState):
-        # 1. 找到最后一条人类消息
-        user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
-        if not user_messages:
-            return "chat_node"
-
-        last_user_input = user_messages[-1].content.lower().strip()
-
-        # 2. 如果用户说“结束面试”，走 saver
-        if last_user_input in ["end", "结束面试"]:
+        if state.get("is_end"):
             return "go_save"
-
-        # 3. 否则，认为是在追问，走 chat_node
+        
         return "chat_node"
 
     workflow.add_conditional_edges(
@@ -52,5 +43,5 @@ def create_graph(checkpointer):
     return workflow.compile(
         checkpointer=checkpointer,
         interrupt_before=["evaluator", "chat_node"],
-        interrupt_after=["evaluator", "chat_node"],
+        # interrupt_after=["evaluator", "chat_node"],
     )

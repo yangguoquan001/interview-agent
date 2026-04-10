@@ -12,3 +12,4 @@ class AgentState(MessagesState):
     topic: str  # Agent 总结的面试主题
     difficulty: str  # 难度分级：简单/中等/困难
     thread_id: str  # 线程ID，用于唯一标识每次面试
+    is_end: bool = False  # 是否结束面试

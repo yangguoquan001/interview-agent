@@ -6,6 +6,9 @@ from src.utils.llm_fatory import get_chat_model
 
 
 def evaluate_node(state: AgentState):
+    if state["is_end"]:
+        return state
+    
     """评价用户的回答"""
     # 获取刚才的文件内容
     with open(state["current_file"], "r", encoding="utf-8") as f:

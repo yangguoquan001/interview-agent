@@ -20,14 +20,13 @@ from src.web.services.interview import InterviewService
 from src.web.services.records import RecordService
 
 
-def write_on_screen(service: InterviewService, input: dict | None, node_names: list[str], save_message: bool = True):
-    generator = service.stream_out_tokens(input, node_names)
+def write_on_screen(service: InterviewService, input: dict | None, save_message: bool = True):
+    generator = service.stream_out_tokens(input)
     response = st.write_stream(generator)
     if save_message:
         st.session_state["messages"].append(
             {"role": "assistant", "content": response}
         )
-
 
 def render_record_viewer():
     """
@@ -90,7 +89,7 @@ def render_chat_window():
                 with st.spinner("🔍 正在根据知识库生成面试题..."):
                     service = st.session_state["interview_service"]
                     initial_input = service.get_initial_input()
-                    write_on_screen(service, initial_input, ["questioner"])
+                    write_on_screen(service, initial_input)
 
                 st.session_state["generating_question"] = False
             st.rerun()
@@ -103,71 +102,53 @@ def render_chat_window():
 
             if state and state.next:
                 current_node = state.next[0]
+                input_placeholder = st.empty()
+                with input_placeholder:
+                    input_col, btn_col = st.columns([6, 1], vertical_alignment="bottom")
+                with btn_col:
+                    end_clicked = st.button("结束面试", use_container_width=True, type="secondary")
+                with input_col:
+                    input_prompt = "请输入你的回答..." if current_node == "evaluator" else "请输入你的追问..."
+                    prompt = st.chat_input(input_prompt)
 
-                # --- 分支 A: evaluator 节点 ---
-                # Agent 状态要求评估用户回答，此时需要用户输入回答
-                if current_node == "evaluator":
-                    prompt = st.chat_input("请输入你的回答...")
-                    if prompt:
-                        st.session_state["messages"].append(
-                            {"role": "user", "content": prompt}
-                        )
-                        with st.chat_message("user"):
-                            st.markdown(prompt)
+                if end_clicked:
+                    input_placeholder.empty() 
 
-                        service = st.session_state["interview_service"]
-                        config = service.get_config()
+                    service = st.session_state["interview_service"]
+                    config = service.get_config()
+                    service.app.update_state(
+                        config,
+                        {
+                            "is_end": True,
+                        },
+                    )
+                    
+                    write_on_screen(service, None, False)
+                    st.session_state["messages"] = []
+                    st.session_state["interview_started"] = False
 
-                        service.app.update_state(
-                            config,
-                            {
-                                "messages": [HumanMessage(content=prompt)],
-                                "user_answer": prompt,
-                            },
-                        )
-                        with st.chat_message("assistant"):
-                            write_on_screen(service, None, ["evaluator"])
+                    st.rerun()
 
-                        st.rerun()
+                if prompt:
+                    input_placeholder.empty() 
+                    with st.chat_message("user"):
+                        st.markdown(prompt)
+                    
+                    st.session_state["messages"].append(
+                        {"role": "user", "content": prompt}
+                    )
+                    service = st.session_state["interview_service"]
+                    config = service.get_config()
+                    service.app.update_state(
+                        config,
+                        {
+                            "messages": [HumanMessage(content=prompt)],
+                            "user_answer": prompt,
+                            "is_end": False,
+                        },
+                    )
 
-                # --- 分支 B: chat_node 节点 ---
-                # 用户已提交回答，AI 已给出评估，此时用户可以选择：
-                # - 输入"next/n/下一题"进入下一题
-                # - 输入其他内容进行追问
-                elif current_node == "chat_node":
-                    prompt = st.chat_input("输入 'end' 结束面试，或输入你的追问...")
-                    if prompt:
-                        is_end = prompt.lower().strip() in ["end", "结束"]
-                        service = st.session_state["interview_service"]
-                        config = service.get_config()
+                    with st.chat_message("assistant"):
+                        write_on_screen(service, None)
 
-                        # 更新状态，将用户的输入推送到 LangGraph 的 messages 中
-                        service.app.update_state(
-                            config,
-                            {
-                                "messages": [HumanMessage(content=prompt)],
-                                "user_answer": prompt,
-                            },
-                        )
-
-                        # --- 分支 A: 进入下一题 ---
-                        if is_end:
-                            with st.spinner("💾 正在保存记录..."):                             
-                                write_on_screen(service, None, ["saver"], False)
-                            
-                            st.session_state["messages"] = []
-                            st.session_state["interview_started"] = False
-                            st.rerun()
-
-                        # --- 分支 B: 追问/答疑 ---
-                        else:
-                            # 显示用户自己的追问内容
-                            st.session_state["messages"].append(
-                                {"role": "user", "content": prompt}
-                            )
-                            with st.chat_message("user"):
-                                st.markdown(prompt)
-
-                            with st.chat_message("assistant"):
-                                write_on_screen(service, None, ["chat_node"])
-                            st.rerun()
+                    st.rerun()
