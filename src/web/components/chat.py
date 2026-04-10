@@ -104,12 +104,12 @@ def render_chat_window():
                 current_node = state.next[0]
                 input_placeholder = st.empty()
                 with input_placeholder:
-                    input_col, btn_col = st.columns([6, 1], vertical_alignment="bottom")
-                with btn_col:
-                    end_clicked = st.button("结束面试", use_container_width=True, type="secondary")
-                with input_col:
-                    input_prompt = "请输入你的回答..." if current_node == "evaluator" else "请输入你的追问..."
-                    prompt = st.chat_input(input_prompt)
+                    input_col, btn_col = st.columns([8, 1], vertical_alignment="center")
+                    with btn_col:
+                        end_clicked = st.button("结束面试", use_container_width=True, type="primary", icon="🚪", width="content")
+                    with input_col:
+                        input_prompt = "请输入你的回答..." if current_node == "evaluator" else "请输入你的追问..."
+                        prompt = st.chat_input(input_prompt)
 
                 if end_clicked:
                     input_placeholder.empty() 
