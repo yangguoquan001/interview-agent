@@ -22,8 +22,5 @@ class Settings(BaseSettings):
         'TOC.md', 'AGENTS.md'
     }
 
-    # interview 配置
-    NUM_QUESTIONS: int = 2
-
 settings = Settings()
 

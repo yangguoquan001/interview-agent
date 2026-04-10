@@ -14,10 +14,19 @@ Chat.py 详细注释 - AI 模拟面试 Web 界面
 
 import streamlit as st
 
-from langchain_core.messages import BaseMessageChunk, HumanMessage
+from langchain_core.messages import HumanMessage
 
 from src.web.services.interview import InterviewService
 from src.web.services.records import RecordService
+
+
+def write_on_screen(service: InterviewService, input: dict | None, node_names: list[str], save_message: bool = True):
+    generator = service.stream_out_tokens(input, node_names)
+    response = st.write_stream(generator)
+    if save_message:
+        st.session_state["messages"].append(
+            {"role": "assistant", "content": response}
+        )
 
 
 def render_record_viewer():
@@ -41,6 +50,7 @@ def render_record_viewer():
 
 
 def render_chat_window():
+    
     # 1. 面试服务单例（封装 LangGraph Workflow 调用）
     if "interview_service" not in st.session_state:
         st.session_state["interview_service"] = InterviewService()
@@ -70,7 +80,7 @@ def render_chat_window():
         with center:
             if st.button("开始面试", type="primary"):
                 st.session_state["interview_started"] = True
-                st.session_state["messages"] = []  # 清空旧消息
+                st.session_state["messages"] = [] 
                 st.session_state["generating_question"] = True
                 st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
 
@@ -80,11 +90,7 @@ def render_chat_window():
                 with st.spinner("🔍 正在根据知识库生成面试题..."):
                     service = st.session_state["interview_service"]
                     initial_input = service.get_initial_input()
-                    generator = service.stream_out_tokens(initial_input, ["questioner"])
-                    response = st.write_stream(generator)
-                    st.session_state["messages"].append(
-                        {"role": "assistant", "content": response}
-                    )
+                    write_on_screen(service, initial_input, ["questioner"])
 
                 st.session_state["generating_question"] = False
             st.rerun()
@@ -95,29 +101,23 @@ def render_chat_window():
             # 获取当前 Agent 状态（包含 next 字段，表示下一个要执行的节点）
             state = st.session_state["interview_service"].get_current_state()
 
-            # state.next 是节点名称列表，如 ["evaluator"] 或 ["chat_node"]
             if state and state.next:
                 current_node = state.next[0]
 
                 # --- 分支 A: evaluator 节点 ---
                 # Agent 状态要求评估用户回答，此时需要用户输入回答
                 if current_node == "evaluator":
-                    # st.chat_input 在底部显示输入框，placeholder 显示提示文字
                     prompt = st.chat_input("请输入你的回答...")
                     if prompt:
-                        # 1. 先把用户回答加入消息历史
                         st.session_state["messages"].append(
                             {"role": "user", "content": prompt}
                         )
-                        # 立即在界面上回显用户输入
                         with st.chat_message("user"):
                             st.markdown(prompt)
 
-                        # 2. 调用 Service 提交回答，获取流式响应
                         service = st.session_state["interview_service"]
                         config = service.get_config()
 
-                        # 这里的字典 key 必须和你定义的 AgentState 保持一致
                         service.app.update_state(
                             config,
                             {
@@ -126,14 +126,8 @@ def render_chat_window():
                             },
                         )
                         with st.chat_message("assistant"):
-                            generator = service.stream_out_tokens(None, ["evaluator"])
-                            response = st.write_stream(generator)
-                            # 3. 把 AI 评估结果加入消息历史
-                            st.session_state["messages"].append(
-                                {"role": "assistant", "content": response}
-                            )
+                            write_on_screen(service, None, ["evaluator"])
 
-                        # 4. 触发 rerun，让 Workflow 继续执行到下一个节点
                         st.rerun()
 
                 # --- 分支 B: chat_node 节点 ---
@@ -141,14 +135,13 @@ def render_chat_window():
                 # - 输入"next/n/下一题"进入下一题
                 # - 输入其他内容进行追问
                 elif current_node == "chat_node":
-                    prompt = st.chat_input("输入 'next' 进入下一题，或输入你的追问...")
+                    prompt = st.chat_input("输入 'end' 结束面试，或输入你的追问...")
                     if prompt:
-                        # 1. 获取输入并判断意图
-                        is_next = prompt.lower().strip() in ["next", "n", "下一题"]
+                        is_end = prompt.lower().strip() in ["end", "结束"]
                         service = st.session_state["interview_service"]
                         config = service.get_config()
 
-                        # 2. 更新状态，将用户的输入推送到 LangGraph 的 messages 中
+                        # 更新状态，将用户的输入推送到 LangGraph 的 messages 中
                         service.app.update_state(
                             config,
                             {
@@ -158,21 +151,12 @@ def render_chat_window():
                         )
 
                         # --- 分支 A: 进入下一题 ---
-                        if is_next:
-                            # 清空当前界面的对话历史（准备显示新题）
-                            st.session_state["messages"] = []
+                        if is_end:
+                            with st.spinner("💾 正在保存记录..."):                             
+                                write_on_screen(service, None, ["saver"], False)
                             
-                            with st.chat_message("assistant"):
-                                with st.spinner("💾 正在保存记录并生成下一题..."):
-                                    # ✅ 关键：这里调用 stream_out_tokens 并迭代它
-                                    # Graph 运行路径：router -> saver -> scanner -> questioner
-                                    generator = service.stream_out_tokens(None, ["questioner"])
-                                    response = st.write_stream(generator)
-                                    
-                                    # 将新出的题目存入历史
-                                    st.session_state["messages"].append(
-                                        {"role": "assistant", "content": response}
-                                    )
+                            st.session_state["messages"] = []
+                            st.session_state["interview_started"] = False
                             st.rerun()
 
                         # --- 分支 B: 追问/答疑 ---
@@ -185,22 +169,5 @@ def render_chat_window():
                                 st.markdown(prompt)
 
                             with st.chat_message("assistant"):
-                                # ✅ 关键：这里监听的是 "chat_node"
-                                # Graph 运行路径：router -> chat_node
-                                generator = service.stream_out_tokens(None, ["chat_node"])
-                                response = st.write_stream(generator)
-                                
-                                st.session_state["messages"].append(
-                                    {"role": "assistant", "content": response}
-                                )
+                                write_on_screen(service, None, ["chat_node"])
                             st.rerun()
-
-            # === 阶段 3: 面试完成 ===
-            # state.next 为空，说明 Workflow 已完成所有节点
-            else:
-                st.success("🎉 本轮面试已完成！")
-                if st.button("重新开始"):
-                    # 重置状态，让用户可以开始新一轮面试
-                    st.session_state["interview_started"] = False
-                    st.session_state["messages"] = []
-                    st.rerun()

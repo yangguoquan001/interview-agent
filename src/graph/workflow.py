@@ -31,8 +31,8 @@ def create_graph(checkpointer):
 
         last_user_input = user_messages[-1].content.lower().strip()
 
-        # 2. 如果用户说“下一题”，走 saver
-        if last_user_input in ["next", "n", "下一题"]:
+        # 2. 如果用户说“结束面试”，走 saver
+        if last_user_input in ["end", "结束面试"]:
             return "go_save"
 
         # 3. 否则，认为是在追问，走 chat_node
@@ -46,7 +46,7 @@ def create_graph(checkpointer):
         "chat_node", router, {"go_save": "saver", "chat_node": "chat_node"}
     )
 
-    workflow.add_edge("saver", "scanner")  # 直接跳转到 scanner 重新扫描
+    workflow.add_edge("saver", END)  # 直接跳转到 scanner 重新扫描
 
     # 在评估后和聊天前中断，等待用户输入
     return workflow.compile(

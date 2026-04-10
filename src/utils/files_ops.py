@@ -28,7 +28,5 @@ def filter_file(file_path: Path) -> bool:
     return True
 
 
-def random_select_file(files: list, k: int = None) -> list:
-    if k is None:
-        k = settings.NUM_QUESTIONS
+def random_select_file(files: list, k: int = 1) -> list:
     return random.sample(files, k=min(k, len(files)))
