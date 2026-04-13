@@ -43,6 +43,16 @@ class RecordService:
             return path.read_text(encoding="utf-8")
         return ""
 
+    def delete_record(self, file_path: str) -> bool:
+        path = Path(file_path)
+        try:
+            if path.exists() and path.is_file():
+                path.unlink()
+                return True
+            return False
+        except Exception:
+            return False
+
     def _parse_record(self, file_path: Path, date_str: str) -> InterviewRecord | None:
         try:
             content = file_path.read_text(encoding="utf-8")

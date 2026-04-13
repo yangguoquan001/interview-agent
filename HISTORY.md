@@ -32,6 +32,18 @@ scanner -> questioner -> evaluator <-> chat_node -> saver
 
 ---
 
+## 2026-04-13 - 删除记录功能
+
+### 功能新增
+- 增加删除面试记录功能
+- RecordService 新增 delete_record 方法
+- 侧边栏每条记录增加删除按钮 🗑️
+
+### UI 优化
+- 调整列比例 [4, 0.6] 解决窄屏下 emoji 按钮溢出问题
+
+---
+
 ## 待完成功能
 
 详见 TODO.md

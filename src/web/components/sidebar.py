@@ -16,12 +16,25 @@ def render_sidebar():
         for date_str, records in records_by_date.items():
             with st.expander(f"📅 {date_str}", expanded=True):
                 for record in records:
-                    btn_label = f"{record.topic}"
-                    if st.button(
-                        btn_label,
-                        key=f"record_{record.file_path}",
-                        use_container_width=True,
-                    ):
-                        st.session_state["selected_record"] = str(record.file_path)
-                        st.session_state["view_mode"] = "record"
-                        st.rerun()
+                    col1, col2 = st.columns([3, 1], vertical_alignment="center")
+                    with col1:
+                        if st.button(
+                            record.topic,
+                            key=f"record_{record.file_path}",
+                            use_container_width=True,
+                        ):
+                            st.session_state["selected_record"] = str(record.file_path)
+                            st.session_state["view_mode"] = "record"
+                            st.rerun()
+                    with col2:
+                        if st.button(
+                            "🗑️",
+                            key=f"delete_{record.file_path}",
+                            use_container_width=True,
+                            type="secondary"
+                        ):
+                            if record_service.delete_record(str(record.file_path)):
+                                st.success("已删除")
+                                st.rerun()
+                            else:
+                                st.error("删除失败")
