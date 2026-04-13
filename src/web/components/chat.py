@@ -38,6 +38,7 @@ def render_record_viewer():
     1. 从 session_state 获取用户选中的记录路径
     2. 如果没有选中，显示提示信息
     3. 否则读取 Markdown 文件内容并渲染
+    4. 提供"返回"按钮切回面试或记录列表
     """
     selected_file = st.session_state.get("selected_record")
     if not selected_file:
@@ -46,6 +47,14 @@ def render_record_viewer():
 
     record_service = RecordService()
     content = record_service.get_record_by_path(selected_file)
+
+    col_back, _ = st.columns([1, 5])
+    with col_back:
+        if st.button("← 返回", use_container_width=True):
+            st.session_state["view_mode"] = "chat"
+            st.session_state.pop("selected_record", None)
+            st.rerun()
+
     st.markdown(content)
 
 
@@ -65,8 +74,6 @@ def render_chat_window():
 
     # === 界面标题 ===
     st.title("🎯 AI 模拟面试")
-    
-
 
     # === 渲染已有消息历史 ===
     # 遍历 session_state 中的所有消息，用 st.chat_message 渲染
@@ -159,7 +166,7 @@ def render_chat_window():
                             "is_end": True,
                         },
                     )
-                    
+
                     write_on_screen(service, None, False)
                     st.session_state["messages"] = []
                     st.session_state["generating_question"] = True
@@ -173,7 +180,7 @@ def render_chat_window():
                     st.session_state["messages"].append(
                         {"role": "user", "content": prompt}
                     )
-                    
+
                     service = st.session_state["interview_service"]
                     config = service.get_config()
                     service.app.update_state(
@@ -186,7 +193,11 @@ def render_chat_window():
                     )
 
                     with st.chat_message("assistant"):
-                        loading_text = "📝 面试官正在评估回答" if current_node == "evaluator" else "🧠 面试官正在思考你的问题"
+                        loading_text = (
+                            "📝 面试官正在评估回答"
+                            if current_node == "evaluator"
+                            else "🧠 面试官正在思考你的问题"
+                        )
                         with st.spinner(loading_text):
                             write_on_screen(service, None)
 

@@ -11,7 +11,7 @@ def main():
     st.set_page_config(layout="wide", page_title="AI 模拟面试")
 
     if "view_mode" not in st.session_state:
-        st.session_state["view_mode"] = "interview"
+        st.session_state["view_mode"] = "chat"
 
     render_sidebar()
 

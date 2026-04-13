@@ -56,6 +56,14 @@ scanner -> questioner -> evaluator <-> chat_node -> saver
 
 ---
 
+## 2026-04-13 - 返回按钮功能
+
+### 功能新增
+- 记录查看页面增加"← 返回"按钮
+- 点击后切回聊天界面
+
+---
+
 ## 待完成功能
 
 详见 TODO.md
