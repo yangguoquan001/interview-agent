@@ -27,10 +27,6 @@ def main():
 
     with tab_knowledge:
         st.session_state["interview_mode"] = "knowledge"
-        # if st.session_state["view_mode"] == "record":
-        #     render_record_viewer()
-        # else:
-        #     render_chat_window()
         render_chat_window()
 
     with tab_resume:
