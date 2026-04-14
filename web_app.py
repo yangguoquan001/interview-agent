@@ -18,6 +18,8 @@ def main():
         st.session_state["interview_mode"] = "knowledge"
 
     render_sidebar()
+    if st.session_state["view_mode"] == "record":
+        render_record_viewer()
 
     st.title("🎯 AI 模拟面试")
 
@@ -25,10 +27,11 @@ def main():
 
     with tab_knowledge:
         st.session_state["interview_mode"] = "knowledge"
-        if st.session_state["view_mode"] == "record":
-            render_record_viewer()
-        else:
-            render_chat_window()
+        # if st.session_state["view_mode"] == "record":
+        #     render_record_viewer()
+        # else:
+        #     render_chat_window()
+        render_chat_window()
 
     with tab_resume:
         st.session_state["interview_mode"] = "resume"
