@@ -72,9 +72,6 @@ def render_chat_window():
     if "interview_started" not in st.session_state:
         st.session_state["interview_started"] = False
 
-    # === 界面标题 ===
-    st.title("🎯 AI 模拟面试")
-
     # === 渲染已有消息历史 ===
     # 遍历 session_state 中的所有消息，用 st.chat_message 渲染
     # st.chat_message 会自动应用聊天气泡样式（user 右对齐，assistant 左对齐）

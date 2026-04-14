@@ -19,12 +19,20 @@ def main():
 
     render_sidebar()
 
-    if st.session_state["view_mode"] == "record":
-        render_record_viewer()
-    elif st.session_state["interview_mode"] == "resume":
+    st.title("🎯 AI 模拟面试")
+
+    tab_knowledge, tab_resume = st.tabs(["💬 知识面试", "📄 简历面试"])
+
+    with tab_knowledge:
+        st.session_state["interview_mode"] = "knowledge"
+        if st.session_state["view_mode"] == "record":
+            render_record_viewer()
+        else:
+            render_chat_window()
+
+    with tab_resume:
+        st.session_state["interview_mode"] = "resume"
         render_resume_interview_page()
-    else:
-        render_chat_window()
 
 
 if __name__ == "__main__":

@@ -45,7 +45,10 @@ def init_resume_interview(resume_file, jd_file):
 
 def render_resume_chat():
     """渲染简历面试聊天界面"""
-    if "interview_service" not in st.session_state:
+    if (
+        "interview_service" not in st.session_state
+        or "interview_config" not in st.session_state
+    ):
         st.warning("请先上传简历和JD文件")
         return
 
@@ -84,7 +87,6 @@ def render_resume_chat():
 
 def render_resume_interview_page():
     """渲染简历面试页面"""
-    st.title("简历面试")
 
     if "is_interview_ended" not in st.session_state:
         st.session_state["is_interview_ended"] = False
@@ -101,8 +103,19 @@ def render_resume_interview_page():
                 st.error("请同时上传简历和JD文件")
     else:
         if st.button("重新开始面试"):
-            st.session_state.clear()
+            for key in [
+                "interview_service",
+                "interview_config",
+                "is_interview_ended",
+                "final_report",
+                "current_question",
+            ]:
+                st.session_state.pop(key, None)
+            st.session_state["view_mode"] = "chat"
             st.rerun()
 
-    if "interview_service" in st.session_state:
+    if (
+        "interview_service" in st.session_state
+        and "interview_config" in st.session_state
+    ):
         render_resume_chat()
