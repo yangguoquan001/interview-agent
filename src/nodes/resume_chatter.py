@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 from config import prompts
 from src.utils.llm_fatory import get_chat_model
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 
 
 def decide_followup(question: str, answer: str, follow_up_count: int) -> dict:
@@ -41,7 +41,7 @@ def generate_followup(question: str, answer: str) -> str:
     return response.content
 
 
-def resume_chatter_node(state: AgentState) -> Dict[str, Any]:
+def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
     """追问节点"""
     questions = state.get("questions", [])
     current_index = state.get("current_question_index", 0)

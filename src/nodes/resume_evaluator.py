@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 
 from config import prompts
 from src.schemas.resume_models import QuestionRecord
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 from src.utils.llm_fatory import get_chat_model
 
 
@@ -35,8 +35,7 @@ def evaluate_answer(
     return {"score": score, "feedback": content}
 
 
-def resume_evaluator_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """评估回答节点"""
+def resume_evaluator_node(state: ResumeAgentState) -> Dict[str, Any]:
     questions = state.get("questions", [])
     current_index = state.get("current_question_index", 0)
     answer = state.get("answer", "")

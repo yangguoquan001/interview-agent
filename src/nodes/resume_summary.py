@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 from config import prompts
 from src.utils.llm_fatory import get_chat_model
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 
 
 def generate_summary(
@@ -28,7 +28,7 @@ def generate_summary(
     return response.content
 
 
-def resume_summary_node(state: AgentState) -> Dict[str, Any]:
+def resume_summary_node(state: ResumeAgentState) -> Dict[str, Any]:
     """问题总结节点"""
     questions = state.get("questions", [])
     current_index = state.get("current_question_index", 0)

@@ -5,7 +5,7 @@ from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 
 from config import prompts
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 from src.schemas.resume_models import QuestionRecord
 from src.utils.llm_fatory import get_chat_model
 
@@ -49,7 +49,7 @@ def generate_questions(
     return questions
 
 
-def resume_questioner_node(state: AgentState) -> Dict[str, Any]:
+def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
     """生成面试问题节点"""
     resume_info = state.get("resume_info")
     job_description = state.get("job_description")

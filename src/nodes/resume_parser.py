@@ -5,7 +5,7 @@ from pathlib import Path
 import json
 
 from config import prompts
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 from src.utils.llm_fatory import get_chat_model
 from src.utils.pdf_reader import read_pdf, read_text_file, get_file_hash
 from src.schemas.resume_models import ResumeInfo, JobDescription
@@ -117,7 +117,7 @@ def parse_jd(file_path: Path) -> JobDescription:
     return JobDescription(**result, raw_text=content)
 
 
-def resume_parser_node(state: AgentState) -> Dict[str, Any]:
+def resume_parser_node(state: ResumeAgentState) -> Dict[str, Any]:
     """简历解析节点"""
     resume_file = state.get("resume_file")
     jd_file = state.get("jd_file")

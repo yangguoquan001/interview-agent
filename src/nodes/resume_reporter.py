@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 
 from config import prompts
 from src.utils.llm_fatory import get_chat_model
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 
 
 def decide_end(questions: list) -> dict:
@@ -58,7 +58,7 @@ def generate_final_report(candidate_name: str, job_title: str, questions: list) 
     return response.content
 
 
-def resume_reporter_node(state: AgentState) -> Dict[str, Any]:
+def resume_reporter_node(state: ResumeAgentState) -> Dict[str, Any]:
     """综合报告节点"""
     questions = state.get("questions", [])
     resume_info = state.get("resume_info")

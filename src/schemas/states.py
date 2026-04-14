@@ -5,6 +5,21 @@ from typing import List, Optional
 from .resume_models import ResumeInfo, JobDescription, QuestionRecord, InterviewSession
 
 
+class ResumeAgentState(MessagesState):
+    resume_file: Optional[str] = None
+    jd_file: Optional[str] = None
+    interview_mode: str = "resume"  # knowledge/resume
+    resume_info: Optional[ResumeInfo] = None
+    job_description: Optional[JobDescription] = None
+    questions: List[QuestionRecord] = []
+    current_question_index: int = 0
+    follow_up_count: int = 0  # 当前问题追问次数
+    question_summary: str = ""  # 当前问题总结
+    session: Optional[InterviewSession] = None
+    final_report: str = ""  # 综合评估报告
+    should_ask_next: bool = False
+
+
 class AgentState(MessagesState):
     files_to_read: List[Path]  # 选中的文件路径
     current_file: Optional[Path]

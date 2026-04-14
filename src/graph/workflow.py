@@ -14,7 +14,7 @@ from src.nodes import (
     resume_summary,
     resume_reporter,
 )
-from src.schemas.states import AgentState
+from src.schemas.states import AgentState, ResumeAgentState
 
 
 def create_graph(checkpointer):
@@ -58,7 +58,7 @@ def create_graph(checkpointer):
 def create_resume_workflow(checkpointer=None):
     """创建简历面试工作流"""
 
-    workflow = StateGraph(AgentState)
+    workflow = StateGraph(ResumeAgentState)
 
     workflow.add_node("parser", resume_parser.resume_parser_node)
     workflow.add_node("questioner", resume_questioner.resume_questioner_node)
