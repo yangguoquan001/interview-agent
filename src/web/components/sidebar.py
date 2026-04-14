@@ -4,6 +4,24 @@ from src.web.services.records import RecordService
 
 def render_sidebar():
     with st.sidebar:
+        st.title("🎯 面试模式")
+
+        if "interview_mode" not in st.session_state:
+            st.session_state["interview_mode"] = "knowledge"
+
+        interview_mode = st.radio(
+            "选择面试类型",
+            ["knowledge", "resume"],
+            format_func=lambda x: "💬 知识面试" if x == "knowledge" else "📄 简历面试",
+            index=0 if st.session_state["interview_mode"] == "knowledge" else 1,
+        )
+
+        if interview_mode != st.session_state["interview_mode"]:
+            st.session_state["interview_mode"] = interview_mode
+            st.rerun()
+
+        st.divider()
+
         st.title("📚 历史记录")
 
         record_service = RecordService()
@@ -31,7 +49,7 @@ def render_sidebar():
                             "🗑️",
                             key=f"delete_{record.file_path}",
                             use_container_width=True,
-                            type="secondary"
+                            type="secondary",
                         ):
                             if record_service.delete_record(str(record.file_path)):
                                 st.success("已删除")

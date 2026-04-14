@@ -12,4 +12,10 @@ dependencies = [
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
     "streamlit>=1.56.0",
+    "pypdf2>=3.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
 ]
