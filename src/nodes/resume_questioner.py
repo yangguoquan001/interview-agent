@@ -34,7 +34,7 @@ def generate_questions(
             ),
         ]
     )
-
+    print("生成面试问题:", result.questions)
     return result.questions
 
 
@@ -56,4 +56,5 @@ def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
     return {
         "questions": questions,
         "current_question_index": 0,
+        "question": questions[0].question if questions else "",
     }

@@ -29,17 +29,29 @@ def save_uploaded_file(uploaded_file) -> Path:
 
 
 def init_resume_interview(resume_file, jd_file):
-    """初始化简历面试"""
+    """初始化简历面试（第一阶段：解析）"""
     resume_path = save_uploaded_file(resume_file)
     jd_path = save_uploaded_file(jd_file)
 
     service = InterviewService(mode="resume")
     result, config = service.start_resume_interview(str(resume_path), str(jd_path))
 
+    st.session_state["parsing_status"] = "parsed"
     st.session_state["interview_service"] = service
     st.session_state["interview_config"] = config
     st.session_state["interview_mode"] = "resume"
 
+
+def generate_interview_questions():
+    """生成面试问题（第二阶段）"""
+    service = st.session_state.get("interview_service")
+    config = st.session_state.get("interview_config")
+    if not service or not config:
+        return None
+
+    result = service.generate_questions(config)
+    question = result.get("question", "") if result else ""
+    st.session_state["current_question"] = question
     return result
 
 
@@ -96,8 +108,19 @@ def render_resume_interview_page():
 
         if st.button("开始面试"):
             if resume_file and jd_file:
+                st.session_state["current_question"] = None
+
                 with st.spinner("正在解析简历和JD..."):
                     init_resume_interview(resume_file, jd_file)
+
+                st.rerun()
+
+        if st.session_state.get(
+            "parsing_status"
+        ) == "parsed" and not st.session_state.get("current_question"):
+            if st.button("生成面试问题"):
+                with st.spinner("正在生成面试问题..."):
+                    generate_interview_questions()
                 st.rerun()
             else:
                 st.error("请同时上传简历和JD文件")

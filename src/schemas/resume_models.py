@@ -34,6 +34,7 @@ class QuestionRecord(BaseModel):
     follow_ups: List[str] = []
     summary: str = ""
     score: int = 0
+    feedback: str = ""
     is_terminated: bool = False
     follow_up_count: int = 0
 

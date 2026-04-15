@@ -104,7 +104,7 @@ RESUME_QUESTIONER_PROMPT_TEMPLATE = """
 {job_description}
 
 请生成3-5个面试问题，按重要程度排序。每个问题应该能够考察候选人的实际能力。
-输出JSON格式：{"questions": [{"topic": "...", "question": "..."}, ...]}
+输出JSON格式：{{"questions": [{{"topic": "...", "question": "..."}}, ...]}}
 """
 
 RESUME_EVALUATOR_SYSTEM_PROMPT = """

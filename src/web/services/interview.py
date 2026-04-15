@@ -3,6 +3,7 @@ import time
 import uuid
 
 from langchain_core.messages import BaseMessageChunk, HumanMessage
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from src.graph.workflow import create_graph, create_resume_graph
@@ -21,7 +22,14 @@ class InterviewService:
     def app(self):
         if self._app is None:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            self._saver = SqliteSaver(self._conn)
+            serde = JsonPlusSerializer(
+                allowed_msgpack_modules=[
+                    ("src.schemas.resume_models", "JobDescription"),
+                    ("src.schemas.resume_models", "ResumeInfo"),
+                    ("src.schemas.resume_models", "QuestionRecord"),
+                ]
+            )
+            self._saver = SqliteSaver(self._conn, serde=serde)
             if self.mode == "resume":
                 self._app = create_resume_graph(self._saver)
             else:
@@ -63,21 +71,28 @@ class InterviewService:
                     yield msg_chunk.content
 
     def start_resume_interview(self, resume_file: str, jd_file: str):
-        """开始简历面试"""
+        """开始简历面试（第一阶段：解析）"""
         thread_id = f"resume_{uuid.uuid4()}"
         config = {"configurable": {"thread_id": thread_id}}
 
-        initial_state = {
-            "resume_file": resume_file,
-            "jd_file": jd_file,
-            "messages": [],
-            "interview_mode": "resume",
-        }
-
-        result = self.app.invoke(initial_state, config)
+        result = self.app.invoke(
+            {
+                "resume_file": resume_file,
+                "jd_file": jd_file,
+                "messages": [],
+                "interview_mode": "resume",
+            },
+            config,
+            interrupt_before=["questioner"],
+        )
 
         self._config = config
         return result, config
+
+    def generate_questions(self, config):
+        """生成面试问题（第二阶段）"""
+        result = self.app.invoke({}, config)
+        return result
 
     def submit_answer(self, answer: str, config: dict = None):
         """提交回答"""
