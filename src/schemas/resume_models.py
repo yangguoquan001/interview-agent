@@ -6,7 +6,7 @@ class ResumeInfo(BaseModel):
     """简历解析结果"""
 
     candidate_name: str = ""
-    years_experience: int = 0
+    years_experience: float = 0
     current_company: str = ""
     skills: List[str] = []
     project_experience: List[str] = []
@@ -28,6 +28,7 @@ class JobDescription(BaseModel):
 class QuestionRecord(BaseModel):
     """单个问题记录"""
 
+    topic: str = ""
     question: str = ""
     answer: str = ""
     follow_ups: List[str] = []
@@ -47,3 +48,9 @@ class InterviewSession(BaseModel):
     current_index: int = 0
     is_completed: bool = False
     final_report: str = ""
+
+
+class QuestionsOutput(BaseModel):
+    """LLM输出的问题列表"""
+
+    questions: List[QuestionRecord]

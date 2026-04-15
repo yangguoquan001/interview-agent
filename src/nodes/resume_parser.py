@@ -3,6 +3,7 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage
 from pathlib import Path
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 from config import prompts
 from src.schemas.states import ResumeAgentState
@@ -62,24 +63,21 @@ def parse_resume(file_path: Path) -> ResumeInfo:
     if not content or content.startswith("Error"):
         raise ValueError(f"读取文件失败: {content}")
 
-    llm = get_chat_model(temperature=0.3)
-    response = llm.invoke(
+    llm = get_chat_model(temperature=0.3, structured_output_schema=ResumeInfo)
+    result = llm.invoke(
         [
+            HumanMessage(content=prompts.RESUME_PARSER_SYSTEM_PROMPT),
             HumanMessage(
                 content=prompts.RESUME_PARSER_PROMPT_TEMPLATE.format(
                     resume_content=content
                 )
-            )
+            ),
         ]
     )
-
-    try:
-        result = json.loads(response.content)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"解析LLM响应失败: {e}") from e
-
-    save_to_cache(result, file_path)
-    return ResumeInfo(**result, raw_text=content)
+    result.raw_text = content
+    save_to_cache(result.model_dump(), file_path)
+    result_dict = result.model_dump()
+    return ResumeInfo(**result_dict)
 
 
 def parse_jd(file_path: Path) -> JobDescription:
@@ -99,22 +97,19 @@ def parse_jd(file_path: Path) -> JobDescription:
     if not content or content.startswith("Error"):
         raise ValueError(f"读取文件失败: {content}")
 
-    llm = get_chat_model(temperature=0.3)
-    response = llm.invoke(
+    llm = get_chat_model(temperature=0.3, structured_output_schema=JobDescription)
+    result = llm.invoke(
         [
+            HumanMessage(content=prompts.JD_PARSER_SYSTEM_PROMPT),
             HumanMessage(
                 content=prompts.JD_PARSER_PROMPT_TEMPLATE.format(jd_content=content)
-            )
+            ),
         ]
     )
-
-    try:
-        result = json.loads(response.content)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"解析LLM响应失败: {e}") from e
-
-    save_to_cache(result, file_path)
-    return JobDescription(**result, raw_text=content)
+    result.raw_text = content
+    save_to_cache(result.model_dump(), file_path)
+    result_dict = result.model_dump()
+    return JobDescription(**result_dict)
 
 
 def resume_parser_node(state: ResumeAgentState) -> Dict[str, Any]:
@@ -122,8 +117,32 @@ def resume_parser_node(state: ResumeAgentState) -> Dict[str, Any]:
     resume_file = state.get("resume_file")
     jd_file = state.get("jd_file")
 
-    resume_info = parse_resume(Path(resume_file)) if resume_file else None
-    job_description = parse_jd(Path(jd_file)) if jd_file else None
+    resume_info = None
+    job_description = None
+
+    if resume_file and jd_file:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_resume = executor.submit(parse_resume, Path(resume_file))
+            future_jd = executor.submit(parse_jd, Path(jd_file))
+            try:
+                resume_info = future_resume.result()
+            except Exception as e:
+                print(f"解析简历失败: {e}")
+            try:
+                job_description = future_jd.result()
+            except Exception as e:
+                print(f"解析JD失败: {e}")
+    else:
+        if resume_file:
+            try:
+                resume_info = parse_resume(Path(resume_file))
+            except Exception as e:
+                print(f"解析简历失败: {e}")
+        if jd_file:
+            try:
+                job_description = parse_jd(Path(jd_file))
+            except Exception as e:
+                print(f"解析JD失败: {e}")
 
     return {
         "resume_info": resume_info,
