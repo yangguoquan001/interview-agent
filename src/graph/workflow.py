@@ -55,7 +55,7 @@ def create_graph(checkpointer):
     )
 
 
-def create_resume_workflow(checkpointer=None):
+def create_resume_graph(checkpointer=None):
     """创建简历面试工作流"""
 
     workflow = StateGraph(ResumeAgentState)
@@ -96,9 +96,4 @@ def create_resume_workflow(checkpointer=None):
         {END: END, "evaluator": "evaluator"},
     )
 
-    return workflow.compile(checkpointer=checkpointer)
-
-
-def create_resume_graph(checkpointer):
-    """创建简历面试图（用于新会话）"""
-    return create_resume_workflow(checkpointer=checkpointer)
+    return workflow.compile(checkpointer=checkpointer, interrupt_before=["evaluator"])

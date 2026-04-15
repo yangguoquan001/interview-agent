@@ -117,32 +117,8 @@ def resume_parser_node(state: ResumeAgentState) -> Dict[str, Any]:
     resume_file = state.get("resume_file")
     jd_file = state.get("jd_file")
 
-    resume_info = None
-    job_description = None
-
-    if resume_file and jd_file:
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            future_resume = executor.submit(parse_resume, Path(resume_file))
-            future_jd = executor.submit(parse_jd, Path(jd_file))
-            try:
-                resume_info = future_resume.result()
-            except Exception as e:
-                print(f"解析简历失败: {e}")
-            try:
-                job_description = future_jd.result()
-            except Exception as e:
-                print(f"解析JD失败: {e}")
-    else:
-        if resume_file:
-            try:
-                resume_info = parse_resume(Path(resume_file))
-            except Exception as e:
-                print(f"解析简历失败: {e}")
-        if jd_file:
-            try:
-                job_description = parse_jd(Path(jd_file))
-            except Exception as e:
-                print(f"解析JD失败: {e}")
+    resume_info = parse_resume(Path(resume_file)) if resume_file else None
+    job_description = parse_jd(Path(jd_file)) if jd_file else None
 
     return {
         "resume_info": resume_info,

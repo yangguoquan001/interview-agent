@@ -30,8 +30,10 @@ def main():
         render_chat_window()
 
     with tab_resume:
-        st.session_state["interview_mode"] = "resume"
-        render_resume_interview_page()
+        mode = "resume"
+        if mode not in st.session_state:
+            st.session_state[mode] = {}
+        render_resume_interview_page(mode)
 
 
 if __name__ == "__main__":

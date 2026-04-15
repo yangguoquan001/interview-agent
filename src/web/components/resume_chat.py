@@ -1,7 +1,18 @@
 import streamlit as st
 from pathlib import Path
 from src.web.services.interview import InterviewService
+from langchain_core.messages import BaseMessageChunk, HumanMessage
 
+from src.schemas.data_models import StStatusConfig
+
+
+def write_on_screen(
+    service: InterviewService, input: dict | None, save_message: bool = True
+):
+    generator = service.stream_out_tokens(input)
+    response = st.write_stream(generator)
+    if save_message:
+        st.session_state["resume"].append({"role": "assistant", "content": response})
 
 def render_file_uploader():
     """渲染文件上传组件"""
@@ -97,48 +108,113 @@ def render_resume_chat():
         st.rerun()
 
 
-def render_resume_interview_page():
-    """渲染简历面试页面"""
+def  render_resume_interview_page(mode):
+    # 1. 初始化面试服务单例
+    if "interview_service" not in st.session_state[mode]:
+        st.session_state[mode]["interview_service"] = InterviewService(mode=mode)
+    
+    # 2. 渲染历史消息
+    if "messages" not in st.session_state[mode]:
+        st.session_state[mode]["messages"] = []
 
-    if "is_interview_ended" not in st.session_state:
-        st.session_state["is_interview_ended"] = False
+    # 3. 面试开始标记（控制界面显示"开始按钮"或"聊天窗口"）
+    if "interview_started" not in st.session_state[mode]:
+        st.session_state[mode]["interview_started"] = False
+    
+    # === 渲染已有消息历史 ===
+    for msg in st.session_state[mode]["messages"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-    if not st.session_state["is_interview_ended"]:
+    # === 阶段 1: 面试开始前 ===
+    # 显示上传简历和JD组件，以及"开始面试"按钮，点击后启动 LangGraph Workflow
+    if not st.session_state[mode]["interview_started"]:
         resume_file, jd_file = render_file_uploader()
-
         if st.button("开始面试"):
             if resume_file and jd_file:
-                st.session_state["current_question"] = None
-
-                with st.spinner("正在解析简历和JD..."):
-                    init_resume_interview(resume_file, jd_file)
-
-                st.rerun()
-
-        if st.session_state.get(
-            "parsing_status"
-        ) == "parsed" and not st.session_state.get("current_question"):
-            if st.button("生成面试问题"):
-                with st.spinner("正在生成面试问题..."):
-                    generate_interview_questions()
+                st.session_state[mode]["interview_started"] = True
+                # 先解析简历和JD文件，设置解析状态为 parsed，再生成面试问题
+                service = st.session_state[mode]["interview_service"]
+                config = service.get_config()
+                resume_path = save_uploaded_file(resume_file)
+                jd_path = save_uploaded_file(jd_file)
+                initial_input = {
+                    "resume_file": str(resume_path),
+                    "jd_file": str(jd_path),
+                    "messages": [],
+                    "interview_mode": "resume",
+                    "resume_info": None,
+                    "job_description": None,
+                    "questions": [],
+                    "current_question_index": 0,
+                    "follow_up_count": 0,
+                    "question_summary": "",
+                    "session": None,
+                    "final_report": "",
+                    "should_ask_next": False,
+                }
+                with st.status("🧐 面试官正在阅读您的简历，请稍候...") as status:
+                    for event in service.app.stream(initial_input, config=config):
+                        # 如果 parse_resume 节点运行完了，说明接下来要跑 generate_question 了
+                        if "parser" in event:
+                            status.update(label="🤔 面试官正在思考问题...")  
+                        if "questioner" in event:
+                            status.update(label="🚀 面试准备就绪！", state="complete")
+                service = st.session_state[mode]["interview_service"]
+                st.session_state[mode]["messages"].append({
+                    "role": "assistant",
+                    "content": service.get_current_state(config).values.get("question", ""),
+                })
+                print(st.session_state[mode]["messages"])
+                st.session_state[mode]["interview_started"] = True
                 st.rerun()
             else:
                 st.error("请同时上传简历和JD文件")
-    else:
-        if st.button("重新开始面试"):
-            for key in [
-                "interview_service",
-                "interview_config",
-                "is_interview_ended",
-                "final_report",
-                "current_question",
-            ]:
-                st.session_state.pop(key, None)
-            st.session_state["view_mode"] = "chat"
-            st.rerun()
+    
+    container = st.empty()
+    # === 阶段 2: 面试进行中 ===
+    # 根据 LangGraph 返回的 current_node 判断当前应该做什么
+    # 获取当前 Agent 状态（包含 next 字段，表示下一个要执行的节点）
+    state = st.session_state[mode]["interview_service"].get_current_state()
+    if state and state.next:
+        current_node = state.next[0]
+        with container.container():
+            input_col, end_col = st.columns(
+                [8, 2], vertical_alignment="center"
+            )
+            with input_col:
+                input_prompt = "请输入你的回答..."
+                prompt = st.chat_input(input_prompt, key="resume")
+            with end_col:
+                end_clicked = st.button(
+                    "结束面试",
+                    use_container_width=True,
+                    type="primary",
+                    icon="🚪",
+                    key="resume_inteview_end_button"
+                )
+        
+        if end_clicked:
+            container.empty()
 
-    if (
-        "interview_service" in st.session_state
-        and "interview_config" in st.session_state
-    ):
-        render_resume_chat()
+            service = st.session_state[mode]["interview_service"]
+            config = service.get_config()
+            service.app.update_state(
+                config,
+                {
+                    "is_end": True,
+                },
+            )
+
+            write_on_screen(service, None, False)
+            st.session_state[mode]["messages"] = []
+            st.session_state[mode]["interview_started"] = False
+
+            st.rerun()
+        
+        if prompt:
+            container.empty()
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+

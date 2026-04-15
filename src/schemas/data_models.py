@@ -14,3 +14,9 @@ class InterviewQuestion(BaseModel):
 
     topic: str  # 面试主题
     question: str  # 面试问题
+
+
+class StStatusConfig(BaseModel):
+    """st.status配置，用于控制在graph执行的不同阶段显示不同的状态"""
+    initial: str = ""
+    config: dict | None = {}

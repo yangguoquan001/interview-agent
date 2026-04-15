@@ -12,30 +12,23 @@ from src.graph.workflow import create_graph, create_resume_graph
 class InterviewService:
     def __init__(self, db_path: str = "checkpoints.db", mode: str = "knowledge"):
         self.db_path = db_path
-        self.mode = mode  # "knowledge" or "resume"
-        self._app = None
+        self.mode = mode  # "knowledge" or "resume" TODO 使用enum
         self._config = None
         self._conn = None
         self._saver = None
+        self._app = None
 
     @property
     def app(self):
         if self._app is None:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            serde = JsonPlusSerializer(
-                allowed_msgpack_modules=[
-                    ("src.schemas.resume_models", "JobDescription"),
-                    ("src.schemas.resume_models", "ResumeInfo"),
-                    ("src.schemas.resume_models", "QuestionRecord"),
-                ]
-            )
-            self._saver = SqliteSaver(self._conn, serde=serde)
+            self._saver = SqliteSaver(self._conn)
             if self.mode == "resume":
                 self._app = create_resume_graph(self._saver)
             else:
                 self._app = create_graph(self._saver)
         return self._app
-
+    
     def get_config(self, thread_id: str = None):
         if thread_id is None:
             thread_id = f"web_{int(time.time())}"
