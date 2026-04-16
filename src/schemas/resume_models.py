@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 
 
-class ResumeInfo(BaseModel):
+class ResumeInfo(TypedDict):
     """简历解析结果"""
 
     candidate_name: str = ""
@@ -14,7 +14,7 @@ class ResumeInfo(BaseModel):
     raw_text: str = ""
 
 
-class JobDescription(BaseModel):
+class JobDescription(TypedDict):
     """JD解析结果"""
 
     job_title: str = ""
@@ -25,7 +25,7 @@ class JobDescription(BaseModel):
     raw_text: str = ""
 
 
-class QuestionRecord(BaseModel):
+class QuestionRecord(TypedDict):
     """单个问题记录"""
 
     topic: str = ""
@@ -39,7 +39,7 @@ class QuestionRecord(BaseModel):
     follow_up_count: int = 0
 
 
-class InterviewSession(BaseModel):
+class InterviewSession(TypedDict):
     """面试会话"""
 
     session_id: str = ""
@@ -51,7 +51,7 @@ class InterviewSession(BaseModel):
     final_report: str = ""
 
 
-class QuestionsOutput(BaseModel):
+class QuestionsOutput(TypedDict):
     """LLM输出的问题列表"""
 
     questions: List[QuestionRecord]

@@ -180,7 +180,7 @@ def  render_resume_interview_page(mode):
         current_node = state.next[0]
         with container.container():
             input_col, end_col = st.columns(
-                [8, 2], vertical_alignment="center"
+                [7, 1], vertical_alignment="center"
             )
             with input_col:
                 input_prompt = "请输入你的回答..."

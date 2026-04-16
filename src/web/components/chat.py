@@ -80,6 +80,7 @@ def render_chat_window():
             st.markdown(msg["content"])
 
     # === 阶段 1: 面试开始前 ===
+    # === 渲染初始页面 ===
     # 显示"开始面试"按钮，点击后启动 LangGraph Workflow
     if not st.session_state["interview_started"]:
         _, center, _ = st.columns(3)
@@ -87,13 +88,16 @@ def render_chat_window():
             if st.button("开始面试", type="primary"):
                 st.session_state["interview_started"] = True
                 st.session_state["messages"] = []
-                st.session_state["generating_question"] = True
                 st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
 
     container = st.empty()
 
+    # === 阶段 2: 面试进行中 ===
+    # 根据 LangGraph 返回的 current_node 判断当前应该做什么
     if st.session_state["interview_started"]:
-        if st.session_state.get("generating_question", False):
+        state = st.session_state["interview_service"].get_current_state()
+        # 生成问题阶段
+        if not state.next:
             with st.chat_message("assistant"):
                 with st.spinner("🔍 正在根据知识库生成面试题..."):
                     service = st.session_state["interview_service"]
@@ -102,100 +106,94 @@ def render_chat_window():
 
                 st.session_state["generating_question"] = False
             st.rerun()
-
-        # === 阶段 2: 面试进行中 ===
-        # 根据 LangGraph 返回的 current_node 判断当前应该做什么
+        # 追问阶段
         else:
-            # 获取当前 Agent 状态（包含 next 字段，表示下一个要执行的节点）
-            state = st.session_state["interview_service"].get_current_state()
-
-            if state and state.next:
-                current_node = state.next[0]
-                with container.container():
-                    input_col, end_col, next_col = st.columns(
-                        [8, 1, 1], vertical_alignment="center"
+            current_node = state.next[0]
+            with container.container():
+                input_col, end_col, next_col = st.columns(
+                    [8, 1, 1], vertical_alignment="center"
+                )
+                with input_col:
+                    input_prompt = (
+                        "请输入你的回答..."
+                        if current_node == "evaluator"
+                        else "请输入你的追问..."
                     )
-                    with input_col:
-                        input_prompt = (
-                            "请输入你的回答..."
-                            if current_node == "evaluator"
-                            else "请输入你的追问..."
-                        )
-                        prompt = st.chat_input(input_prompt)
-                    with end_col:
-                        end_clicked = st.button(
-                            "结束面试",
-                            use_container_width=True,
-                            type="primary",
-                            icon="🚪",
-                        )
-                    with next_col:
-                        next_clicked = st.button(
-                            "下一题", use_container_width=True, icon="➡️"
-                        )
-
-                if end_clicked:
-                    container.empty()
-
-                    service = st.session_state["interview_service"]
-                    config = service.get_config()
-                    service.app.update_state(
-                        config,
-                        {
-                            "is_end": True,
-                        },
+                    prompt = st.chat_input(input_prompt)
+                with end_col:
+                    end_clicked = st.button(
+                        "结束面试",
+                        use_container_width=True,
+                        type="primary",
+                        icon="🚪",
+                    )
+                with next_col:
+                    next_clicked = st.button(
+                        "下一题", use_container_width=True, icon="➡️"
                     )
 
-                    write_on_screen(service, None, False)
-                    st.session_state["messages"] = []
-                    st.session_state["interview_started"] = False
+            if end_clicked:
+                container.empty()
 
-                    st.rerun()
+                service = st.session_state["interview_service"]
+                config = service.get_config()
+                service.app.update_state(
+                    config,
+                    {
+                        "is_end": True,
+                    },
+                )
 
-                if next_clicked:
-                    container.empty()
+                write_on_screen(service, None, False)
+                st.session_state["messages"] = []
+                st.session_state["interview_started"] = False
 
-                    service = st.session_state["interview_service"]
-                    config = service.get_config()
-                    service.app.update_state(
-                        config,
-                        {
-                            "is_end": True,
-                        },
+                st.rerun()
+
+            if next_clicked:
+                container.empty()
+
+                service = st.session_state["interview_service"]
+                config = service.get_config()
+                service.app.update_state(
+                    config,
+                    {
+                        "is_end": True,
+                    },
+                )
+
+                write_on_screen(service, None, False)
+                st.session_state["messages"] = []
+                st.session_state["generating_question"] = True
+                st.rerun()
+
+            if prompt:
+                container.empty()
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+
+                st.session_state["messages"].append(
+                    {"role": "user", "content": prompt}
+                )
+
+                service = st.session_state["interview_service"]
+                config = service.get_config()
+                service.app.update_state(
+                    config,
+                    {
+                        "messages": [HumanMessage(content=prompt)],
+                        "user_answer": prompt,
+                        "is_end": False,
+                    },
+                )
+
+                with st.chat_message("assistant"):
+                    loading_text = (
+                        "📝 面试官正在评估回答"
+                        if current_node == "evaluator"
+                        else "🧠 面试官正在思考你的问题"
                     )
+                    with st.spinner(loading_text):
+                        write_on_screen(service, None)
 
-                    write_on_screen(service, None, False)
-                    st.session_state["messages"] = []
-                    st.session_state["generating_question"] = True
-                    st.rerun()
-
-                if prompt:
-                    container.empty()
-                    with st.chat_message("user"):
-                        st.markdown(prompt)
-
-                    st.session_state["messages"].append(
-                        {"role": "user", "content": prompt}
-                    )
-
-                    service = st.session_state["interview_service"]
-                    config = service.get_config()
-                    service.app.update_state(
-                        config,
-                        {
-                            "messages": [HumanMessage(content=prompt)],
-                            "user_answer": prompt,
-                            "is_end": False,
-                        },
-                    )
-
-                    with st.chat_message("assistant"):
-                        loading_text = (
-                            "📝 面试官正在评估回答"
-                            if current_node == "evaluator"
-                            else "🧠 面试官正在思考你的问题"
-                        )
-                        with st.spinner(loading_text):
-                            write_on_screen(service, None)
-
-                    st.rerun()
+                st.rerun()

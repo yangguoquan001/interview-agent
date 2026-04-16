@@ -58,5 +58,5 @@ def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
     return {
         "questions": questions,
         "current_question_index": 0,
-        "question": questions[0].question if questions else "",
+        "question": questions[0]["question"] if questions else "",
     }
