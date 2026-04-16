@@ -3,7 +3,6 @@ from pathlib import Path
 from src.web.services.interview import InterviewService
 from langchain_core.messages import BaseMessageChunk, HumanMessage
 
-from src.schemas.data_models import StStatusConfig
 
 
 def write_on_screen(
@@ -171,15 +170,16 @@ def  render_resume_interview_page(mode):
             }
             with st.status("🧐 面试官正在阅读您的简历，请稍候...") as status:
                 for event in service.app.stream(initial_input, config=config):
-                    # 如果 parse_resume 节点运行完了，说明接下来要跑 generate_question 了
                     if "parser" in event:
                         status.update(label="🤔 面试官正在思考问题...")  
                     if "questioner" in event:
                         status.update(label="🚀 面试准备就绪！", state="complete")
             service = st.session_state[mode]["interview_service"]
+            questions = service.get_current_state(config).values.get("questions", [])
+            question = questions[0]["question"] if questions else ""
             st.session_state[mode]["messages"].append({
                 "role": "assistant",
-                "content": service.get_current_state(config).values.get("question", ""),
+                "content": question,
             })
             st.rerun()
         else:

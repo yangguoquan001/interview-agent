@@ -18,6 +18,7 @@ class ResumeAgentState(MessagesState):
     session: Optional[InterviewSession] = None
     final_report: str = ""  # 综合评估报告
     should_ask_next: bool = False
+    is_end: bool = False  # 是否结束面试
 
 
 class AgentState(MessagesState):

@@ -63,7 +63,7 @@ def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
             "should_ask_next": True,
         }
 
-    decision = decide_followup(current_question.question, answer, follow_up_count)
+    decision = decide_followup(current_question["question"], answer, follow_up_count)
 
     if decision.get("should_continue", False):
         next_follow_up = decision.get("next_follow_up", "")

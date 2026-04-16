@@ -140,7 +140,7 @@ RESUME_FOLLOWUP_DECISION_PROMPT = """
 3. 如果候选人的回答足够深入和完整，可以停止追问
 4. 否则，继续深入追问
 
-请以JSON格式输出：{"should_continue": true/false, "reason": "...", "next_follow_up": "..."}
+请以JSON格式输出：{{"should_continue": true/false, "reason": "...", "next_follow_up": "..."}}
 """
 
 RESUME_SUMMARY_PROMPT = """

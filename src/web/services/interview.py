@@ -58,7 +58,7 @@ class InterviewService:
         config = self.get_config()
         for msg_chunk, metadata in self.app.stream(
             input_data, config, stream_mode="messages"
-        ):
+        ):  
             if isinstance(msg_chunk, BaseMessageChunk):
                 if hasattr(msg_chunk, "content") and msg_chunk.content:
                     yield msg_chunk.content
