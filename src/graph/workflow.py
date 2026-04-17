@@ -63,50 +63,58 @@ def create_resume_graph(checkpointer=None):
 
     workflow.add_node("parser", resume_parser.resume_parser_node)
     workflow.add_node("questioner", resume_questioner.resume_questioner_node)
-    # workflow.add_node("evaluator", resume_evaluator.resume_evaluator_node)
     workflow.add_node("chatter", resume_chatter.resume_chatter_node)
+    workflow.add_node("user_input", lambda state: state)                      # 【新增】空节点，用于中断挂起
     workflow.add_node("summary", resume_summary.resume_summary_node)
     workflow.add_node("reporter", resume_reporter.resume_reporter_node)
     workflow.add_node("saver", resume_saver.resume_save_node)
 
     workflow.set_entry_point("parser")
-
     workflow.add_edge("parser", "questioner")
-    # workflow.add_edge("questioner", "chatter")
+    workflow.add_edge("questioner", "chatter")
 
-    def end_router(state: ResumeAgentState):
+    def chatter_router(state: ResumeAgentState):
+        """AI发言后的判断"""
         if state.get("is_end"):
-            return "go_save"
-
-        return "go_chat"
+            return "go_report"
+        
+        if state.get("is_question_finished"):
+            return "go_summary"
+        
+        return "go_wait"
     
     workflow.add_conditional_edges(
-        "questioner", end_router, {"go_save": "saver", "go_chat": "chatter"}
+        "chatter",
+        chatter_router,
+        {
+            "go_report": "reporter",
+            "go_summary": "summary",
+            "go_wait": "user_input"
+        }
     )
-    workflow.add_edge("saver", END)  
+    workflow.add_edge("user_input", "chatter")
 
-    # def chatter_router(state: AgentState):
-    #     if state.get("should_ask_next"):
-    #         return "summary"
-    #     return "chatter"
+    def summary_router(state: ResumeAgentState):
+        """总结完后的判断"""
+        if state.get("is_end"):
+            return "go_report"
+        
+        current_idx = state.get("current_question_index", 0)
+        questions = state.get("questions", [])
+        if current_idx >= len(questions):
+            return "go_report"
+        
+        return "go_next_question"
+    
+    workflow.add_conditional_edges(
+        "summary",
+        summary_router,
+        {
+            "go_report": "reporter",
+            "go_next_question": "chatter"
+        }
+    )
+    workflow.add_edge("reporter", "saver")
+    workflow.add_edge("saver", END)
 
-    # workflow.add_conditional_edges(
-    #     "chatter",
-    #     chatter_router,
-    #     {"summary": "summary", "chatter": "chatter"},
-    # )
-
-    # workflow.add_edge("summary", "reporter")
-
-    # def reporter_router(state: AgentState):
-    #     if state.get("is_end"):
-    #         return END
-    #     return "evaluator"
-
-    # workflow.add_conditional_edges(
-    #     "reporter",
-    #     reporter_router,
-    #     {END: END, "evaluator": "evaluator"},
-    # )
-
-    return workflow.compile(checkpointer=checkpointer, interrupt_before=["chatter"])
+    return workflow.compile(checkpointer=checkpointer, interrupt_before=["user_input"])

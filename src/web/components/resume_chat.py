@@ -175,11 +175,13 @@ def  render_resume_interview_page(mode):
                     if "questioner" in event:
                         status.update(label="🚀 面试准备就绪！", state="complete")
             service = st.session_state[mode]["interview_service"]
-            questions = service.get_current_state(config).values.get("questions", [])
-            question = questions[0]["question"] if questions else ""
+            state = service.get_current_state()
+            question_records = state.values["question_records"]
+            current_question_index = state.values["current_question_index"]
+            current_question_record = question_records[current_question_index]
             st.session_state[mode]["messages"].append({
                 "role": "assistant",
-                "content": question,
+                "content": current_question_record.questions[0],
             })
             st.rerun()
         else:

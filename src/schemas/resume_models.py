@@ -25,13 +25,11 @@ class JobDescription(TypedDict):
     raw_text: str = ""
 
 
-class QuestionRecord(TypedDict):
+class QuestionRecord(BaseModel):
     """单个问题记录"""
 
-    topic: str = ""
-    question: str = ""
-    answer: str = ""
-    follow_ups: List[str] = []
+    questions: List[str] = []  # 单个问题的所有追问
+    answers: List[str] = []
     summary: str = ""
     score: int = 0
     feedback: str = ""
@@ -51,7 +49,7 @@ class InterviewSession(TypedDict):
     final_report: str = ""
 
 
-class QuestionsOutput(TypedDict):
+class QuestionsOutput(BaseModel):
     """LLM输出的问题列表"""
 
-    questions: List[QuestionRecord]
+    question_list: List[str] = []

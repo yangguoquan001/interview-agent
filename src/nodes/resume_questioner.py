@@ -29,13 +29,14 @@ def generate_questions(
             HumanMessage(content=prompts.RESUME_QUESTIONER_SYSTEM_PROMPT),
             HumanMessage(
                 content=prompts.RESUME_QUESTIONER_PROMPT_TEMPLATE.format(
-                    resume_info=resume_str, job_description=jd_str
+                    resume_info=resume_str,
+                    job_description=jd_str,
+                    ),
                 )
-            ),
         ]
     )
     
-    return result.questions
+    return result.question_list
 
 
 def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
@@ -46,16 +47,19 @@ def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
     if not resume_info or not job_description:
         return {"error": "缺少简历或JD信息"}
 
-    # questions = generate_questions(
+    # question_list = generate_questions(
     #     resume_info.model_dump() if hasattr(resume_info, "model_dump") else resume_info,
     #     job_description.model_dump()
     #     if hasattr(job_description, "model_dump")
     #     else job_description,
     # )
     # 使用以上数据mock生成的面试问题 TODO: 实际使用时，需要从数据库中获取简历和JD
-    questions = [QuestionRecord(topic='RAG 架构设计与知识库落地', question='在‘智能聊天机器人系统’项目中，你提到构建了基于大模型 + 知识库的对话系统。请详细描述一下你的 RAG（检索增强生成）流程设计：\n1. 你是如何进行文档切片和向量索引的？有没有尝试过混合检索（如关键词 + 向量）或重排序（Re-ranking）策略来提升召回精度？\n2. 在多轮对话场景下，如何管理上下文窗口以平衡成本与效果？如果检索到的信息与大模型幻觉冲突，你设计了什么机制来抑制幻觉？', answer='', follow_ups=[], summary='', score=0, feedback='', is_terminated=False, follow_up_count=0), QuestionRecord(topic='Agent 工具调用与任务编排能力', question='JD 中强调 Agent 的工具调用与自主执行能力。在‘咨询师培训系统’项目中，你结合了 functioncall 模拟用户角色。请分享一个复杂的任务编排案例：\n1. Agent 是如何决定调用哪个工具的？如果工具返回了错误数据或超时，Agent 是否有重试或降级逻辑？\n2. 在实现多步骤任务自动化时，你是如何设计 Prompt 或状态机来确保 Agent 按照预期流程执行，而不是陷入死循环或跳过关键步骤？', answer='', follow_ups=[], summary='', score=0, feedback='', is_terminated=False, follow_up_count=0), QuestionRecord(topic='后端架构稳定性与异步处理', question='项目经验中提到引入消息队列（Kafka/RocketMQ）实现异步收发，且 JD 要求具备后端开发及稳定性保障能力。\n1. 在大模型推理耗时较长的情况下，你是如何利用消息队列解耦请求与响应的？前端如何感知处理进度？\n2. 如果消息消费失败或积压，你设计了哪些监控告警和补偿机制来保证系统最终一致性？结合 FastAPI 和 Redis，你是如何优化接口响应延迟的？', answer='', follow_ups=[], summary='', score=0, feedback='', is_terminated=False, follow_up_count=0), QuestionRecord(topic='Embedding 模型优化与检索性能', question="你在‘GithubRepoTagSystem'和‘CommitQualityEvaluation'项目中涉及了 Embedding 模型的微调与优化。针对企业级 RAG 系统的落地需求：\n1. 你是如何解决 Embedding 模型在小样本或特定领域下的过拟合问题的？\n2. 当向量库数据量增长到百万/千万级时，你会考虑哪些架构调整（如分片、近似搜索算法选择）来维持检索效率？请结合你使用过的技术栈谈谈实际调优经验。", answer='', follow_ups=[], summary='', score=0, feedback='', is_terminated=False, follow_up_count=0)]
-    print("生成面试问题:", questions)
+    question_list = ['在“智能聊天机器人系统”项目中，你提到构建了基于大模型的知识库问答。请具体说明你在向量检索阶段采用了何种分块（Chunking）策略来处理长文档？在面对检索结果与用户问题相关性不高的情况时，你是如何通过重排序（Re-ranking）或提示词工程来优化最终回答质量的？', '针对 JD 中强调的“工具调用与 API 对接”，在“咨询师培训系统”中你使用了 functioncall 能力。当大模型生成的参数与实际 API 接口定义不一致导致调用失败时，你设计了怎样的重试机制或错误恢复流程（例如：是否引入中间校验层或让模型自我修正），以保证对话链路的稳定性？', '你的简历中提到在聊天系统中引入了 Kafka/RocketMQ 实现异步收发。考虑到 Agent 开发常涉及多步推理和外部 API 调用，如果下游服务（如 LLM 推理或数据库写入）出现延迟或超时，你会如何设计队列消费端的背压（Backpressure）策略，以防止请求堆积并保障用户体验？', '岗位职责中提到“优化智能体决策逻辑”。在你过往的“企业货源司机召回”或“城市圈规划”项目中涉及算法调度，如果将其迁移到 Agent 场景，当 Agent 面临多个可行路径（如直接回复 vs 调用搜索工具）时，你会如何设计一套评估打分机制来决定最佳行动，以避免无效的工具调用成本？']
+    question_records = []
+    for question in question_list:
+        question_records.append(QuestionRecord(questions=[question]))
     return {
-        "questions": questions,
+        "question_list": question_list,
+        "question_records": question_records,
         "current_question_index": 0,
     }

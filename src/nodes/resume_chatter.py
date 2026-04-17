@@ -7,15 +7,18 @@ from src.utils.llm_fatory import get_chat_model
 from src.schemas.states import ResumeAgentState
 
 
-def decide_followup(question: str, answer: str, follow_up_count: int) -> dict:
+def decide_followup(questions: list, answers: list, follow_up_count: int) -> dict:
     """决定是否继续追问"""
     llm = get_chat_model(temperature=0.3)
+
+    # 拼装问答记录
+    question_answer_pairs = list(zip(questions, answers))
 
     response = llm.invoke(
         [
             HumanMessage(
                 content=prompts.RESUME_FOLLOWUP_DECISION_PROMPT.format(
-                    question=question, answer=answer, follow_up_count=follow_up_count
+                    chat_history=question_answer_pairs, follow_up_count=follow_up_count
                 )
             )
         ]
@@ -42,47 +45,54 @@ def generate_followup(question: str, answer: str) -> str:
 
 
 def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
-    """追问节点"""
-    questions = state.get("questions", [])
+    """
+    追问与对话核心节点
+    职责：
+    1. 如果没有当前回答，说明是新题目开始，抛出主问题。
+    2. 如果有回答，判断是否需要追问。
+    3. 如果满足结束条件，标记 is_question_finished = True 引导至 summary 节点。
+    """
+    question_list = state.get("question_list", [])
     current_index = state.get("current_question_index", 0)
-    answer = state.get("answer", "")
-    follow_up_count = state.get("follow_up_count", 0)
-
-    if current_index >= len(questions):
+    # 判断是否满足终止条件
+    if current_index >= len(question_list):
         return {"is_end": True}
+    
+    question_records = state["question_records"]
+    curr_question_record = question_records[current_index]
+    current_questions = curr_question_record.questions
+    current_answers = curr_question_record.answers
+    last_answer = current_answers[-1] if current_answers else ""
 
-    current_question = questions[current_index]
+    # --- 情况 A: 开启新题 (此时 answer 为空) ---
+    # 场景：从 questioner 刚进来，或者从 summary 刚跳过来
+    if not last_answer:
+        return {}
 
-    is_unknown = "不知道" in answer or "不清楚" in answer or "不了解" in answer
-
+    # --- 情况 B: 处理用户的回答 (此时 answer 有内容) ---
+    
+    # 1. 判定是否“不知道”或达到追问上限
+    is_unknown = "不知道" in last_answer or "不清楚" in last_answer or "不了解" in last_answer
     if is_unknown or follow_up_count >= 3:
-        questions[current_index].is_terminated = is_unknown
+        curr_question_record.answers.append(last_answer)
+        curr_question_record.is_terminated = True
         return {
-            "questions": questions,
-            "follow_up_count": 0,
-            "should_ask_next": True,
+            "question_records": question_records,
         }
 
-    decision = decide_followup(current_question["question"], answer, follow_up_count)
+    decision = decide_followup(current_questions, current_answers, follow_up_count)
 
-    if decision.get("should_continue", False):
-        next_follow_up = decision.get("next_follow_up", "")
-        if not next_follow_up:
-            next_follow_up = generate_followup(current_question.question, answer)
-
-        questions[current_index].follow_ups.append(answer)
+    next_question = decision.get("next_question", "")
+    if next_question:
+        current_questions.append(next_question)
         follow_up_count += 1
-        questions[current_index].follow_up_count = follow_up_count
-
+        curr_question_record.follow_up_count = follow_up_count
+        curr_question_record.questions = current_questions
         return {
-            "questions": questions,
-            "follow_up_count": follow_up_count,
-            "question": next_follow_up,
-            "should_ask_next": False,
+            "question_records": question_records,
         }
     else:
+        curr_question_record.is_terminated = True
         return {
-            "questions": questions,
-            "follow_up_count": 0,
-            "should_ask_next": True,
+            "question_records": question_records,
         }
