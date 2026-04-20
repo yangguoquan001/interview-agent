@@ -78,6 +78,7 @@ def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
         curr_question_record.is_terminated = True
         return {
             "question_records": question_records,
+            "current_question_index": current_index+1,
         }
 
     decision = decide_followup(current_questions, current_answers, follow_up_count)

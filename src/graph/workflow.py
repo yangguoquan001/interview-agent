@@ -75,10 +75,12 @@ def create_resume_graph(checkpointer=None):
 
     def chatter_router(state: ResumeAgentState):
         """AI发言后的判断"""
-        if state.get("is_end"):
+        is_end = state.get("is_end")
+        if is_end:
             return "go_report"
-        
-        if state.get("is_question_finished"):
+
+        question_records = state["question_records"]
+        if question_records[-1].is_terminated:
             return "go_summary"
         
         return "go_wait"
@@ -96,12 +98,10 @@ def create_resume_graph(checkpointer=None):
 
     def summary_router(state: ResumeAgentState):
         """总结完后的判断"""
-        if state.get("is_end"):
+        if state.get("current_question_index") == len(state["questions"]):
             return "go_report"
         
-        current_idx = state.get("current_question_index", 0)
-        questions = state.get("questions", [])
-        if current_idx >= len(questions):
+        if state.get("is_end"):
             return "go_report"
         
         return "go_next_question"
