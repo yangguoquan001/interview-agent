@@ -1,4 +1,3 @@
-from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, END
 
 from src.nodes.chatter import chat_node
@@ -9,7 +8,6 @@ from src.nodes.questioner import generate_questions_node
 from src.nodes import (
     resume_parser,
     resume_questioner,
-    resume_evaluator,
     resume_chatter,
     resume_summary,
     resume_reporter,
