@@ -96,6 +96,8 @@ def final_safe_delete(db_path: str, thread_id: str):
 # --- 调用执行 ---
 # 请确保 DB_PATH 指向你项目根目录下的实际数据库文件名
 DB_PATH = "checkpoints.db" 
-THREAD_TO_DELETE = "daily_study_1775126843"
+# THREAD_TO_DELETE = "daily_study_1775126843"
 # final_safe_delete(DB_PATH, THREAD_TO_DELETE)
-list_all_thread_ids(DB_PATH)
+thread_ids = list_all_thread_ids(DB_PATH)
+for tid in thread_ids:
+    final_safe_delete(DB_PATH, tid)

@@ -1,11 +1,11 @@
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from config.prompts import EVALUATOR_PROMPT_TEMPLATE, EVALUATOR_PROMPT_TO_MESSAGES, EVALUATOR_SYSTEM_PROMPT
-from src.schemas.states import AgentState
+from config import prompts
+from src.schemas.states import KnowledgeAgentState
 from src.utils.llm_fatory import get_chat_model
 
 
-def evaluate_node(state: AgentState):
+def evaluate_node(state: KnowledgeAgentState):
     if state["is_end"]:
         return state
     
@@ -15,8 +15,8 @@ def evaluate_node(state: AgentState):
         content = f.read()
     
     llm = get_chat_model(streaming=True)
-    system_prompt = EVALUATOR_SYSTEM_PROMPT
-    prompt = EVALUATOR_PROMPT_TEMPLATE.format(
+    system_prompt = prompts.EVALUATOR_SYSTEM_PROMPT
+    prompt = prompts.EVALUATOR_PROMPT_TEMPLATE.format(
         difficulty_level=state["difficulty"],
         question=state["question"],
         answer=state["answer"],
@@ -29,7 +29,7 @@ def evaluate_node(state: AgentState):
     return {
         "feedback": feedback, 
         "messages": [
-            SystemMessage(content=EVALUATOR_PROMPT_TO_MESSAGES), 
+            SystemMessage(content=prompts.EVALUATOR_PROMPT_TO_MESSAGES), 
             AIMessage(content=feedback)
         ]
     }

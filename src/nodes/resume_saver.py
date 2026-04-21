@@ -4,33 +4,24 @@ import re
 from langchain_core.messages import HumanMessage, AIMessage, RemoveMessage, SystemMessage
 from pathlib import Path
 
-from src.schemas.states import AgentState
+from src.schemas.states import ResumeAgentState
 
 
-def save_node(state: AgentState):
+def resume_save_node(state: ResumeAgentState):
     """
     持久化当前面试记录的节点
     """
     # 1. 准备目录 (例如: records/20260401)
     date_str = datetime.datetime.now().strftime("%Y%m%d")
-    folder_path = Path("records") / date_str
+    folder_path = Path("resume_records") / date_str
     folder_path.mkdir(parents=True, exist_ok=True)
 
-    # 2. 准备文件名 (使用 topic)
-    topic = state.get("topic", "未命名主题")
-    # 清理非法字符
-    safe_topic = re.sub(r'[\\/*?:"<>|]', "", topic)
-    # 增加时间戳防止同主题覆盖
     time_str = datetime.datetime.now().strftime("%H%M%S")
-    file_path = folder_path / f"{safe_topic}_{time_str}.md"
+    file_path = folder_path / f"{time_str}.md"
 
     # 3. 构造 Markdown 内容
     md_lines = [
-        f"# 面试练习记录: {topic}", 
         f"- **日期**: {datetime.datetime.now().isoformat()}", 
-        f"- **难度**: {state.get('difficulty')}", 
-        f"- **来源文件**: {state.get('current_file', '无')}",
-        f"- **线程ID**: {state.get('thread_id', '无')}",
         "---"
     ]
     
@@ -50,7 +41,7 @@ def save_node(state: AgentState):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
     
-    print(f"💾 [系统]: 当前练习已保存至 {file_path}")
+    print(f"💾 [系统]: 当前简历面试已保存至 {file_path}")
     
     delete_msgs = [RemoveMessage(id=m.id) for m in state["messages"]]
-    return {"messages": delete_msgs}
+    return {"messages": delete_msgs, "save_file_path": str(file_path) if file_path else None, "is_end": True}

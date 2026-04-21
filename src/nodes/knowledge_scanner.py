@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from config.settings import settings
-from src.schemas.states import AgentState
+from src.schemas.states import KnowledgeAgentState
 from src.utils.files_ops import random_select_file, filter_file
 
 
-def scan_repositories_node(state: AgentState) -> dict:
+def scan_repositories_node(state: KnowledgeAgentState) -> dict:
     """
     扫描并返回所有符合条件的知识点路径
     每次调用都重新扫描知识库，支持无限面试

@@ -1,16 +1,14 @@
-import random
 import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langgraph.graph import END
 
-from config.prompts import QUESTIONER_PROMPT_TEMPLATE
+from config import prompts
 from src.schemas.enums import DifficultyLevel
-from src.schemas.states import AgentState
+from src.schemas.states import KnowledgeAgentState
 from src.utils.llm_fatory import get_chat_model
 
 
-def generate_questions_node(state: AgentState):
+def generate_questions_node(state: KnowledgeAgentState):
     if not state["files_to_read"]:
         return {"question": "未知题目", "topic": "未知主题", "files_to_read": []}
 
@@ -38,7 +36,7 @@ def generate_questions_node(state: AgentState):
     - 第三行开始是以二级标题开头的题目，格式为：## 面试题：
     - 第四行开始是题目内容。
     """
-    prompt = QUESTIONER_PROMPT_TEMPLATE.format(
+    prompt = prompts.QUESTIONER_PROMPT_TEMPLATE.format(
         difficulty_level=difficulty_level,
         difficulty_desc=difficulty_desc,
         content=content,
