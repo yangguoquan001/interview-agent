@@ -109,6 +109,7 @@ def render_resume_chat():
 
 
 def  render_resume_interview_page(mode):
+    st.session_state["last_interview_mode"] = mode
     # 1. 初始化面试服务单例
     if "interview_service" not in st.session_state[mode]:
         st.session_state[mode]["interview_service"] = InterviewService(mode=mode)

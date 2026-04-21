@@ -7,6 +7,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from src.graph.workflow import create_graph, create_resume_graph
+from src.schemas.states import QuestionRecord
 
 
 class InterviewService:
@@ -22,7 +23,8 @@ class InterviewService:
     def app(self):
         if self._app is None:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            self._saver = SqliteSaver(self._conn)
+            serde = JsonPlusSerializer(allowed_msgpack_modules=[QuestionRecord])
+            self._saver = SqliteSaver(self._conn, serde=serde)
             if self.mode == "resume":
                 self._app = create_resume_graph(self._saver)
             else:

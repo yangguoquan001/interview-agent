@@ -31,18 +31,16 @@ def main():
     tab_knowledge, tab_resume = st.tabs(["💬 知识面试", "📄 简历面试"])
 
     with tab_knowledge:
-        if st.session_state["interview_mode"] != "knowledge":
-            st.session_state["last_interview_mode"] = st.session_state["interview_mode"]
-        st.session_state["interview_mode"] = "knowledge"
+        # if st.session_state["interview_mode"] != "knowledge":
+        #     st.session_state["last_interview_mode"] = st.session_state["interview_mode"]
         render_chat_window()
 
     with tab_resume:
-        if st.session_state["interview_mode"] != "resume":
-            st.session_state["last_interview_mode"] = st.session_state["interview_mode"]
+        # if st.session_state["interview_mode"] != "resume":
+        #     st.session_state["last_interview_mode"] = st.session_state["interview_mode"]
         mode = "resume"
         if mode not in st.session_state:
             st.session_state[mode] = {}
-        st.session_state["interview_mode"] = "resume"
         render_resume_interview_page(mode)
 
 
