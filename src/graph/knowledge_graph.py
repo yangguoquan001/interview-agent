@@ -1,10 +1,10 @@
 from langgraph.graph import StateGraph, END
 
-from nodes.knowledge_chatter import chat_node
-from nodes.knowledge_evaluator import evaluate_node
-from nodes.knowledge_saver import save_node
-from nodes.knowledge_scanner import scan_repositories_node
-from nodes.knowledge_questioner import generate_questions_node
+from src.nodes.knowledge_chatter import chat_node
+from src.nodes.knowledge_evaluator import evaluate_node
+from src.nodes.knowledge_saver import save_node
+from src.nodes.knowledge_scanner import scan_repositories_node
+from src.nodes.knowledge_questioner import generate_questions_node
 from src.schemas.states import KnowledgeAgentState
 
 def create_knowledge_graph(checkpointer):

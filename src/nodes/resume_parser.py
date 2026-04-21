@@ -1,15 +1,14 @@
-from typing import Any, Dict
+import json
 
 from langchain_core.messages import HumanMessage
 from pathlib import Path
-import json
-from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict
 
 from config import prompts
 from src.schemas.states import ResumeAgentState
 from src.utils.llm_fatory import get_chat_model
 from src.utils.pdf_reader import read_pdf, read_text_file, get_file_hash
-from schemas.data_models import ResumeInfo, JobDescription
+from src.schemas.data_models import ResumeInfo, JobDescription
 
 
 RESUME_CACHE_DIR = Path("resume_cache")
