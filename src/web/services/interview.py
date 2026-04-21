@@ -2,7 +2,7 @@ import sqlite3
 import time
 import uuid
 
-from langchain_core.messages import BaseMessageChunk, HumanMessage
+from langchain_core.messages import BaseMessageChunk
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
@@ -83,21 +83,3 @@ class InterviewService:
 
         self._config = config
         return result, config
-
-    def generate_questions(self, config):
-        """生成面试问题（第二阶段）"""
-        result = self.app.invoke({}, config)
-        return result
-
-    def submit_answer(self, answer: str, config: dict = None):
-        """提交回答"""
-        if config is None:
-            config = self.get_config()
-
-        state = {
-            "messages": [HumanMessage(content=answer)],
-            "answer": answer,
-        }
-
-        result = self.app.invoke(state, config)
-        return result
