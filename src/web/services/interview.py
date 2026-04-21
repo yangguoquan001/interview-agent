@@ -1,19 +1,20 @@
 import sqlite3
 import time
-import uuid
 
 from langchain_core.messages import BaseMessageChunk
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from src.graph.workflow import create_graph, create_resume_graph
+from src.graph.knowledge_graph import create_knowledge_graph
+from src.graph.resume_graph import create_resume_graph
+from src.schemas.enums import InterviewMode
 from src.schemas.states import QuestionRecord
 
 
 class InterviewService:
-    def __init__(self, db_path: str = "checkpoints.db", mode: str = "knowledge"):
+    def __init__(self, db_path: str = "checkpoints.db", mode: InterviewMode = InterviewMode.KNOWLEDGE):
         self.db_path = db_path
-        self.mode = mode  # "knowledge" or "resume" TODO 使用enum
+        self.mode = mode
         self._config = None
         self._conn = None
         self._saver = None
@@ -25,10 +26,10 @@ class InterviewService:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             serde = JsonPlusSerializer(allowed_msgpack_modules=[QuestionRecord])
             self._saver = SqliteSaver(self._conn, serde=serde)
-            if self.mode == "resume":
+            if self.mode == InterviewMode.RESUME:
                 self._app = create_resume_graph(self._saver)
             else:
-                self._app = create_graph(self._saver)
+                self._app = create_knowledge_graph(self._saver)
         return self._app
     
     def get_config(self, thread_id: str = None):
@@ -65,21 +66,4 @@ class InterviewService:
                 if hasattr(msg_chunk, "content") and msg_chunk.content:
                     yield msg_chunk.content
 
-    def start_resume_interview(self, resume_file: str, jd_file: str):
-        """开始简历面试（第一阶段：解析）"""
-        thread_id = f"resume_{uuid.uuid4()}"
-        config = {"configurable": {"thread_id": thread_id}}
 
-        result = self.app.invoke(
-            {
-                "resume_file": resume_file,
-                "jd_file": jd_file,
-                "messages": [],
-                "interview_mode": "resume",
-            },
-            config,
-            interrupt_before=["questioner"],
-        )
-
-        self._config = config
-        return result, config

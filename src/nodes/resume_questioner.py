@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage
 
 from config import prompts
 from src.schemas.states import ResumeAgentState
-from src.schemas.resume_models import QuestionRecord, QuestionsOutput
+from schemas.data_models import QuestionRecord, QuestionsOutput
 from src.utils.llm_fatory import get_chat_model
 
 

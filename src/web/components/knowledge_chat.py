@@ -16,6 +16,7 @@ import streamlit as st
 
 from langchain_core.messages import HumanMessage
 
+from src.schemas.enums import InterviewMode
 from src.web.services.interview import InterviewService
 from src.web.services.records import RecordService
 
@@ -26,7 +27,7 @@ def write_on_screen(
     generator = service.stream_out_tokens(input)
     response = st.write_stream(generator)
     if save_message:
-        st.session_state["messages"].append({"role": "assistant", "content": response})
+        st.session_state[InterviewMode.KNOWLEDGE]["messages"].append({"role": "assistant", "content": response})
 
 
 def render_record_viewer():
@@ -52,61 +53,39 @@ def render_record_viewer():
     with col_back:
         if st.button("← 返回", use_container_width=True):
             st.session_state["view_mode"] = "chat"
-            # last_mode = st.session_state.get("last_interview_mode", "knowledge")
-            # st.session_state["interview_mode"] = last_mode
             st.session_state.pop("selected_record", None)
             st.rerun()
 
     st.markdown(content)
 
 
-def render_chat_window():
+def render_knowledge_interview_page(session_state: dict | None):
 
-    # 1. 面试服务单例（封装 LangGraph Workflow 调用）
-    if "interview_service" not in st.session_state:
-        st.session_state["interview_service"] = InterviewService()
-
-    # 2. 消息历史（用户和助手的对话记录，用于渲染聊天界面）
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = []
-
-    # 3. 面试开始标记（控制界面显示"开始按钮"或"聊天窗口"）
-    if "interview_started" not in st.session_state:
-        st.session_state["interview_started"] = False
-
-    # === 渲染已有消息历史 ===
-    # 遍历 session_state 中的所有消息，用 st.chat_message 渲染
-    # st.chat_message 会自动应用聊天气泡样式（user 右对齐，assistant 左对齐）
-    for msg in st.session_state["messages"]:
+    for msg in session_state["messages"]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # === 阶段 1: 面试开始前 ===
-    # === 渲染初始页面 ===
-    # 显示"开始面试"按钮，点击后启动 LangGraph Workflow
-    if not st.session_state["interview_started"]:
+    if not session_state["interview_started"]:
         _, center, _ = st.columns(3)
         with center:
             if st.button("开始面试", type="primary"):
-                st.session_state["interview_started"] = True
-                st.session_state["messages"] = []
-                st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
-
+                session_state["interview_started"] = True
+                session_state["messages"] = []
+                st.rerun() 
     container = st.empty()
 
-    # === 阶段 2: 面试进行中 ===
-    # 根据 LangGraph 返回的 current_node 判断当前应该做什么
-    if st.session_state["interview_started"]:
-        state = st.session_state["interview_service"].get_current_state()
+
+    if session_state["interview_started"]:
+        state = session_state["interview_service"].get_current_state()
         # 生成问题阶段
         if not state.next:
             with st.chat_message("assistant"):
                 with st.spinner("🔍 正在根据知识库生成面试题..."):
-                    service = st.session_state["interview_service"]
+                    service = session_state["interview_service"]
                     initial_input = service.get_initial_input()
                     write_on_screen(service, initial_input)
 
-                st.session_state["generating_question"] = False
+                session_state["generating_question"] = False
             st.rerun()
         # 追问阶段
         else:
@@ -137,7 +116,7 @@ def render_chat_window():
             if end_clicked:
                 container.empty()
 
-                service = st.session_state["interview_service"]
+                service = session_state["interview_service"]
                 config = service.get_config()
                 service.app.update_state(
                     config,
@@ -147,15 +126,15 @@ def render_chat_window():
                 )
 
                 write_on_screen(service, None, False)
-                st.session_state["messages"] = []
-                st.session_state["interview_started"] = False
+                session_state["messages"] = []
+                session_state["interview_started"] = False
 
                 st.rerun()
 
             if next_clicked:
                 container.empty()
 
-                service = st.session_state["interview_service"]
+                service = session_state["interview_service"]
                 config = service.get_config()
                 service.app.update_state(
                     config,
@@ -165,8 +144,8 @@ def render_chat_window():
                 )
 
                 write_on_screen(service, None, False)
-                st.session_state["messages"] = []
-                st.session_state["generating_question"] = True
+                session_state["messages"] = []
+                session_state["generating_question"] = True
                 st.rerun()
 
             if prompt:
@@ -174,9 +153,9 @@ def render_chat_window():
                 with st.chat_message("user"):
                     st.markdown(prompt)
 
-                st.session_state["messages"].append({"role": "user", "content": prompt})
+                session_state["messages"].append({"role": "user", "content": prompt})
 
-                service = st.session_state["interview_service"]
+                service = session_state["interview_service"]
                 config = service.get_config()
                 service.app.update_state(
                     config,

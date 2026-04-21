@@ -2,7 +2,7 @@ from langgraph.graph import MessagesState
 from pathlib import Path
 from typing import List, Optional
 
-from .resume_models import ResumeInfo, JobDescription, QuestionRecord, InterviewSession
+from .data_models import ResumeInfo, JobDescription, QuestionRecord
 
 
 class ResumeAgentState(MessagesState):
@@ -11,8 +11,6 @@ class ResumeAgentState(MessagesState):
     jd_file: Optional[str] = None
     resume_info: Optional[ResumeInfo] = None
     job_description: Optional[JobDescription] = None
-
-    interview_mode: str = "resume"  # knowledge/resume
 
     # 问题相关
     question_list: List[str] = []
@@ -27,7 +25,7 @@ class ResumeAgentState(MessagesState):
     is_end: bool = False  # 是否结束面试
 
 
-class AgentState(MessagesState):
+class KnowledgeAgentState(MessagesState):
     files_to_read: List[Path]  # 选中的文件路径
     current_file: Optional[Path]
     question: str

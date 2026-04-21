@@ -1,18 +1,8 @@
 import streamlit as st
 
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessageChunk, HumanMessage
+from langchain_core.messages import AIMessage, AIMessageChunk
 from pathlib import Path
 
-from src.web.services.interview import InterviewService
-
-
-def write_on_screen(
-    service: InterviewService, input: dict | None, save_message: bool = True
-):
-    generator = service.stream_out_tokens(input)
-    response = st.write_stream(generator)
-    if save_message:
-        st.session_state["resume"]["messages"].append({"role": "assistant", "content": response}) 
 
 def render_file_uploader():
     """渲染文件上传组件"""
@@ -39,58 +29,39 @@ def save_uploaded_file(uploaded_file) -> Path:
     return file_path
 
 
-def  render_resume_interview_page(mode):
-    st.session_state["last_interview_mode"] = mode
-    # 1. 初始化面试服务单例
-    if "interview_service" not in st.session_state[mode]:
-        st.session_state[mode]["interview_service"] = InterviewService(mode=mode)
-    
-    # 2. 渲染历史消息
-    if "messages" not in st.session_state[mode]:
-        st.session_state[mode]["messages"] = []
-
-    # 3. 面试开始标记（控制界面显示"开始按钮"或"聊天窗口"）
-    if "interview_started" not in st.session_state[mode]:
-        st.session_state[mode]["interview_started"] = False
-    
-    # === 渲染已有消息历史 ===
-    for msg in st.session_state[mode]["messages"]:
+def  render_resume_interview_page(session_state: dict | None):
+    for msg in session_state["messages"]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # === 阶段 1: 面试开始前 ===
-    # === 渲染初始页面 ===
-    # 显示上传简历和JD组件，以及"开始面试"按钮，点击后启动 LangGraph Workflow
-    if not st.session_state[mode]["interview_started"]:
+    if not session_state["interview_started"]:
         resume_file, jd_file = render_file_uploader()
         if st.button("开始面试"):
             if resume_file and jd_file:
-                st.session_state[mode]["interview_started"] = True
-                st.session_state[mode]["messages"] = []
-                st.session_state[mode]["resume_file"] = resume_file
-                st.session_state[mode]["jd_file"] = jd_file
+                session_state["interview_started"] = True
+                session_state["messages"] = []
+                session_state["resume_file"] = resume_file
+                session_state["jd_file"] = jd_file
                 st.rerun()
             else:
                 st.error("请同时上传简历和JD文件")
     
     container = st.empty()
-    # === 阶段 2: 面试进行中 ===
-    # 根据 LangGraph 返回的 current_node 判断当前应该做什么
-    if st.session_state[mode]["interview_started"]:
-        state = st.session_state[mode]["interview_service"].get_current_state()
-        if not state.next and not state.values.get("is_end", False):
+
+    if session_state["interview_started"]:
+        graph_state = session_state["interview_service"].get_current_state()
+        if not graph_state.next and not graph_state.values.get("is_end", False):
             # 先解析简历和JD文件，设置解析状态为 parsed，再生成面试问题
-            service = st.session_state[mode]["interview_service"]
+            service = session_state["interview_service"]
             config = service.get_config()
-            resume_file = st.session_state[mode]["resume_file"]
-            jd_file = st.session_state[mode]["jd_file"]
+            resume_file = session_state["resume_file"]
+            jd_file = session_state["jd_file"]
             resume_path = save_uploaded_file(resume_file)
             jd_path = save_uploaded_file(jd_file)
             initial_input = {
                 "resume_file": str(resume_path),
                 "jd_file": str(jd_path),
                 "messages": [],
-                "interview_mode": "resume",
                 "resume_info": None,
                 "job_description": None,
                 "questions": [],
@@ -107,28 +78,28 @@ def  render_resume_interview_page(mode):
                         status.update(label="🤔 面试官正在思考问题...")  
                     if "questioner" in event:
                         status.update(label="🚀 面试准备就绪！", state="complete")
-            service = st.session_state[mode]["interview_service"]
-            state = service.get_current_state()
-            question_records = state.values["question_records"]
-            current_question_index = state.values["current_question_index"]
+            service = session_state["interview_service"]
+            graph_state = service.get_current_state()
+            question_records = graph_state.values["question_records"]
+            current_question_index = graph_state.values["current_question_index"]
             current_question_record = question_records[current_question_index]
-            st.session_state[mode]["messages"].append({
+            session_state["messages"].append({
                 "role": "assistant",
                 "content": current_question_record.questions[0],
             })
             st.rerun()
         else:
-            if not state.next:
+            if not graph_state.next:
                 with st.chat_message("assistant"):
-                    st.markdown(f"面试已结束，可前往{state.values['save_file_path']}中查看面试过程及总结和评价")
+                    st.markdown(f"面试已结束，可前往{graph_state.values['save_file_path']}中查看面试过程及总结和评价")
                 _, center, _ = st.columns(3)
                 with center:
                     if st.button("重新面试", type="primary"):
-                        st.session_state[mode]["interview_started"] = False
-                        st.session_state[mode]["messages"] = []
+                        session_state["interview_started"] = False
+                        session_state["messages"] = []
                         st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
             else:
-                current_node = state.next[0]
+                current_node = graph_state.next[0]
                 with container.container():
                     input_col, end_col = st.columns(
                         [7, 1], vertical_alignment="center"
@@ -148,7 +119,7 @@ def  render_resume_interview_page(mode):
                 if end_clicked:
                     container.empty()
 
-                    service = st.session_state[mode]["interview_service"]
+                    service = session_state["interview_service"]
                     config = service.get_config()
                     service.app.update_state(
                         config,
@@ -157,9 +128,17 @@ def  render_resume_interview_page(mode):
                         },
                     )
 
-                    write_on_screen(service, None, False)
-                    st.session_state[mode]["messages"] = []
-                    st.session_state[mode]["interview_started"] = False
+                    config = service.get_config()
+                    full_content = ""
+                    for msg_chunk, metadata in service.app.stream(
+                        None, config, stream_mode="messages"
+                    ):  
+                        if hasattr(msg_chunk, "content") and msg_chunk.content:
+                            full_content += msg_chunk.content
+                    if full_content:
+                        session_state["messages"].append({"role": "assistant", "content": full_content}) 
+                    session_state["messages"] = []
+                    session_state["interview_started"] = False
 
                     st.rerun()
                 
@@ -168,11 +147,11 @@ def  render_resume_interview_page(mode):
                     with st.chat_message("user"):
                         st.markdown(prompt)
 
-                    st.session_state[mode]["messages"].append(
+                    session_state["messages"].append(
                         {"role": "user", "content": prompt}
                     )
 
-                    service = st.session_state[mode]["interview_service"]
+                    service = session_state["interview_service"]
                     config = service.get_config()
                     service.app.update_state(
                         config,
@@ -181,7 +160,6 @@ def  render_resume_interview_page(mode):
                         },
                     )
 
-                    # 3. 流式循环
                     last_node = None
                     full_content = ""
                     placeholder = None
@@ -190,13 +168,13 @@ def  render_resume_interview_page(mode):
                     for msg_chunk, metadata in service.app.stream(None, config, stream_mode="messages"):
                         node_name = metadata.get("langgraph_node")
                         
-                        if isinstance(msg_chunk, (AIMessage, AIMessageChunk)):
+                        if isinstance(msg_chunk, (AIMessage, AIMessageChunk)): #TODO 删除AIMessage
                             
                             # 检测节点切换，开启新气泡
                             if node_name != last_node:
-                                # 如果上一个气泡有内容，先存档（注意：只存档 AI 内容）
+                                # 如果上一个气泡有内容，先存档
                                 if last_node and full_content:
-                                    st.session_state[mode]["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
+                                    session_state["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
                                 
                                 last_node = node_name
                                 full_content = ""
@@ -207,16 +185,14 @@ def  render_resume_interview_page(mode):
                                     placeholder = st.empty()
                                     placeholder.markdown(f"*{label}* ⏳")
 
-                            # 拼接并打印
                             if msg_chunk.content:
                                 full_content += msg_chunk.content
                                 placeholder.markdown(full_content + "▌")
 
-                    # 4. 整个循环结束后，存入最后一个节点的 AI 输出
+                    # 整个循环结束后，存入最后一个节点的 AI 输出
                     if full_content:
-                        st.session_state[mode]["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
+                        session_state["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
 
-                    # 5. 最后执行一次 rerun，顶部历史渲染逻辑会接管，显示最干净的状态
                     st.rerun()
                 
                             

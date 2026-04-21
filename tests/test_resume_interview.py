@@ -1,5 +1,5 @@
 import pytest
-from src.schemas.resume_models import ResumeInfo, JobDescription, QuestionRecord
+from schemas.data_models import ResumeInfo, JobDescription, QuestionRecord
 
 
 def test_resume_info_model():

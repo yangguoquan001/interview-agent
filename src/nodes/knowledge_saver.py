@@ -4,10 +4,10 @@ import re
 from langchain_core.messages import HumanMessage, AIMessage, RemoveMessage, SystemMessage
 from pathlib import Path
 
-from src.schemas.states import AgentState
+from src.schemas.states import KnowledgeAgentState
 
 
-def save_node(state: AgentState):
+def save_node(state: KnowledgeAgentState):
     """
     持久化当前面试记录的节点
     """

@@ -1,12 +1,3 @@
-QUESTIONER_SYSTEM_PROMPT = """
-你是一个资深面试官。请基于提供的文档内容和指定难度出一道面试题。
-[要求]:
-- 题目必须与文档内容紧密相关。
-- 题目要清晰明确。
-- 请务必以 JSON 格式输出：{{'topic': '...', 'question': '...'}}
-"""
-
-
 QUESTIONER_PROMPT_TEMPLATE = """
 [难度定义]: {difficulty_desc}
 
@@ -46,7 +37,7 @@ EVALUATOR_PROMPT_TO_MESSAGES = """
 请给出评分（0-10）和具体改进建议，并给出你心目中的满分答案。
 """
 
-CHAT_PROMPT = """
+KNOWLEDGE_CHAT_PROMPT = """
 ### 角色设定
 你是一名大厂资深技术专家。你刚才对候选人的面试回答给出了专业评价。
 现在候选人针对你的反馈或相关技术点提出了追问，请作为一名严谨的技术导师，为其提供深度的技术解答。
@@ -130,25 +121,7 @@ RESUME_QUESTIONER_PROMPT_TEMPLATE = """
 **注意**：问题描述应具体，不要模棱两可。例如，与其问“谈谈 Redis”，不如问“在你的 XX 项目中，面对高并发流量，你是如何设计 Redis 缓存更新策略以保证数据一致性的？”。
 """
 
-RESUME_EVALUATOR_SYSTEM_PROMPT = """
-你是一个严谨的面试官。请根据题目和候选人回答给出评分和改进建议。
-评分标准：
-- 技术深度：是否理解了技术原理
-- 实践经验：是否有实际项目经验
-- 表达能力：是否清晰准确地表达
-- 问题解决：是否能分析和解决问题
 
-请给出0-10的评分和具体改进建议。
-"""
-
-
-RESUME_EVALUATOR_PROMPT_TEMPLATE = """
-[面试问题]: {question}
-[候选人回答]: {answer}
-[简历中的相关经历]: {related_experience}
-
-请给出评分和改进建议。
-"""
  # TODO 修改追问次数上线
 RESUME_FOLLOWUP_DECISION_PROMPT = """
 你是一位资深的资深技术面试官。你需要根据当前的【问答记录】，判断是否需要继续深入追问。如果需要继续追问，请生成下一步追问的问题。
@@ -194,19 +167,6 @@ RESUME_SUMMARY_PROMPT = """
 返回你的总结。
 """
 
-RESUME_END_DECISION_PROMPT = """
-你是一个面试官。你需要决定是否结束这场面试。
-
-[已考察的问题数量]: {question_count}
-[已考察的问题列表]: {questions_summary}
-
-请根据以下因素综合判断：
-1. 是否已覆盖所有重要技能点
-2. JD要求的关键能力是否已考察
-3. 是否需要进一步验证某些能力
-
-请以JSON格式输出：{"should_end": true/false, "reason": "...", "next_question": "..."}
-"""
 
 RESUME_REPORTER_PROMPT = """
 你是一位资深的技术面试官和人才评估专家。现在请你根据面试过程中对各个环节的【阶段性总结】，为候选人出具一份最终的面试评估报告。
