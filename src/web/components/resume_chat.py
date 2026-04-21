@@ -168,7 +168,7 @@ def  render_resume_interview_page(session_state: dict | None):
                     for msg_chunk, metadata in service.app.stream(None, config, stream_mode="messages"):
                         node_name = metadata.get("langgraph_node")
                         
-                        if isinstance(msg_chunk, (AIMessage, AIMessageChunk)): #TODO 删除AIMessage
+                        if isinstance(msg_chunk, (AIMessageChunk)):
                             
                             # 检测节点切换，开启新气泡
                             if node_name != last_node:

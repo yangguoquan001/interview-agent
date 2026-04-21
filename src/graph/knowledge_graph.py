@@ -19,8 +19,6 @@ def create_knowledge_graph(checkpointer):
     workflow.add_edge("scanner", "questioner")
     workflow.add_edge("questioner", "evaluator")
 
-    # TODO：更加格式化的开始下一题
-    # 评价后的循环：是继续聊天还是下一题？
     def router(state: KnowledgeAgentState):
         if state.get("is_end"):
             return "go_save"

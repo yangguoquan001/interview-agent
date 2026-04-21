@@ -122,7 +122,6 @@ RESUME_QUESTIONER_PROMPT_TEMPLATE = """
 """
 
 
- # TODO 修改追问次数上线
 RESUME_FOLLOWUP_DECISION_PROMPT = """
 你是一位资深的资深技术面试官。你需要根据当前的【问答记录】，判断是否需要继续深入追问。如果需要继续追问，请生成下一步追问的问题。
 
@@ -130,7 +129,7 @@ RESUME_FOLLOWUP_DECISION_PROMPT = """
 {chat_history}
 
 ### 追问次数
-当前已追问次数: {follow_up_count} / 上限: 1次
+当前已追问次数: {follow_up_count} / 上限: 3次
 
 ### 判定逻辑：
 1. **信息完整性**：候选人是否已经清晰地说明了技术细节、选型理由、遇到的困难及解决方案？
