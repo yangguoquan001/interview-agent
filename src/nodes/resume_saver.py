@@ -44,4 +44,4 @@ def resume_save_node(state: ResumeAgentState):
     print(f"💾 [系统]: 当前简历面试已保存至 {file_path}")
     
     delete_msgs = [RemoveMessage(id=m.id) for m in state["messages"]]
-    return {"messages": delete_msgs}
+    return {"messages": delete_msgs, "save_file_path": str(file_path) if file_path else None, "is_end": True}

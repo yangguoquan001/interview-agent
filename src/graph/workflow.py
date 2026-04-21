@@ -78,7 +78,8 @@ def create_resume_graph(checkpointer=None):
             return "go_report"
 
         question_records = state["question_records"]
-        if question_records[-1].is_terminated:
+        current_question_index = state.get("current_question_index", 0)
+        if question_records[current_question_index].is_terminated:
             return "go_summary"
         
         return "go_wait"
@@ -96,7 +97,7 @@ def create_resume_graph(checkpointer=None):
 
     def summary_router(state: ResumeAgentState):
         """总结完后的判断"""
-        if state.get("current_question_index") == len(state["questions"]):
+        if state.get("current_question_index") > len(state["question_list"]):
             return "go_report"
         
         if state.get("is_end"):

@@ -21,3 +21,4 @@ resume_cache/
 resume_records/
 
 *.ipynb
+.vscode/

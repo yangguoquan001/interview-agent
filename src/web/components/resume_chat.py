@@ -1,5 +1,8 @@
 import streamlit as st
+
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessageChunk, HumanMessage
 from pathlib import Path
+
 from src.web.services.interview import InterviewService
 
 
@@ -9,7 +12,7 @@ def write_on_screen(
     generator = service.stream_out_tokens(input)
     response = st.write_stream(generator)
     if save_message:
-        st.session_state["resume"].append({"role": "assistant", "content": response})
+        st.session_state["resume"]["messages"].append({"role": "assistant", "content": response}) 
 
 def render_file_uploader():
     """渲染文件上传组件"""
@@ -143,7 +146,7 @@ def  render_resume_interview_page(mode):
     # 根据 LangGraph 返回的 current_node 判断当前应该做什么
     if st.session_state[mode]["interview_started"]:
         state = st.session_state[mode]["interview_service"].get_current_state()
-        if not state.next:
+        if not state.next and not state.values.get("is_end", False):
             # 先解析简历和JD文件，设置解析状态为 parsed，再生成面试问题
             service = st.session_state[mode]["interview_service"]
             config = service.get_config()
@@ -183,44 +186,106 @@ def  render_resume_interview_page(mode):
             })
             st.rerun()
         else:
-            current_node = state.next[0]
-            with container.container():
-                input_col, end_col = st.columns(
-                    [7, 1], vertical_alignment="center"
-                )
-                with input_col:
-                    input_prompt = "请输入你的回答..."
-                    prompt = st.chat_input(input_prompt)
-                with end_col:
-                    end_clicked = st.button(
-                        "结束面试",
-                        use_container_width=True,
-                        type="primary",
-                        icon="🚪",
-                        key="resume_inteview_end_button"
+            if not state.next:
+                with st.chat_message("assistant"):
+                    st.markdown(f"面试已结束，可前往{state.values['save_file_path']}中查看面试过程及总结和评价")
+                _, center, _ = st.columns(3)
+                with center:
+                    if st.button("重新面试", type="primary"):
+                        st.session_state[mode]["interview_started"] = False
+                        st.session_state[mode]["messages"] = []
+                        st.rerun()  # 立刻刷新页面！这样按钮和窄列布局就会瞬间消失
+            else:
+                current_node = state.next[0]
+                with container.container():
+                    input_col, end_col = st.columns(
+                        [7, 1], vertical_alignment="center"
                     )
-            
-            if end_clicked:
-                container.empty()
+                    with input_col:
+                        input_prompt = "请输入你的回答..."
+                        prompt = st.chat_input(input_prompt)
+                    with end_col:
+                        end_clicked = st.button(
+                            "结束面试",
+                            use_container_width=True,
+                            type="primary",
+                            icon="🚪",
+                            key="resume_inteview_end_button"
+                        )
+                
+                if end_clicked:
+                    container.empty()
 
-                service = st.session_state[mode]["interview_service"]
-                config = service.get_config()
-                service.app.update_state(
-                    config,
-                    {
-                        "is_end": True,
-                    },
-                )
+                    service = st.session_state[mode]["interview_service"]
+                    config = service.get_config()
+                    service.app.update_state(
+                        config,
+                        {
+                            "is_end": True,
+                        },
+                    )
 
-                write_on_screen(service, None, False)
-                st.session_state[mode]["messages"] = []
-                st.session_state[mode]["interview_started"] = False
+                    write_on_screen(service, None, False)
+                    st.session_state[mode]["messages"] = []
+                    st.session_state[mode]["interview_started"] = False
 
-                st.rerun()
-            
-            if prompt:
-                container.empty()
-                with st.chat_message("user"):
-                    st.markdown(prompt)
+                    st.rerun()
+                
+                if prompt:
+                    container.empty()
+                    with st.chat_message("user"):
+                        st.markdown(prompt)
 
+                    st.session_state[mode]["messages"].append(
+                        {"role": "user", "content": prompt}
+                    )
+
+                    service = st.session_state[mode]["interview_service"]
+                    config = service.get_config()
+                    service.app.update_state(
+                        config,
+                        {
+                            "last_answer": prompt,
+                        },
+                    )
+
+                    # 3. 流式循环
+                    last_node = None
+                    full_content = ""
+                    placeholder = None
+
+                    # 获取流式输出
+                    for msg_chunk, metadata in service.app.stream(None, config, stream_mode="messages"):
+                        node_name = metadata.get("langgraph_node")
+                        
+                        if isinstance(msg_chunk, (AIMessage, AIMessageChunk)):
+                            
+                            # 检测节点切换，开启新气泡
+                            if node_name != last_node:
+                                # 如果上一个气泡有内容，先存档（注意：只存档 AI 内容）
+                                if last_node and full_content:
+                                    st.session_state[mode]["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
+                                
+                                last_node = node_name
+                                full_content = ""
+                                label = "正在总结..." if current_node == "summary" else "正在思考问题..."
+                                
+                                # 开启新气泡并显示状态
+                                with st.chat_message("assistant"):
+                                    placeholder = st.empty()
+                                    placeholder.markdown(f"*{label}* ⏳")
+
+                            # 拼接并打印
+                            if msg_chunk.content:
+                                full_content += msg_chunk.content
+                                placeholder.markdown(full_content + "▌")
+
+                    # 4. 整个循环结束后，存入最后一个节点的 AI 输出
+                    if full_content:
+                        st.session_state[mode]["messages"].append({"role": "assistant", "content": full_content, "node": last_node})
+
+                    # 5. 最后执行一次 rerun，顶部历史渲染逻辑会接管，显示最干净的状态
+                    st.rerun()
+                
+                            
 

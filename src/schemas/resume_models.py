@@ -53,3 +53,12 @@ class QuestionsOutput(BaseModel):
     """LLM输出的问题列表"""
 
     question_list: List[str] = []
+
+
+class ResumeFollowupDecisionOutput(BaseModel):
+    next_question: str = ""
+
+
+class ResumeSummaryOutput(BaseModel):
+    summary: str = ""
+    

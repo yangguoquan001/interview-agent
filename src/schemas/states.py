@@ -19,8 +19,11 @@ class ResumeAgentState(MessagesState):
     question_records: List[QuestionRecord] = []
     current_question_index: int = 0
 
-    session: Optional[InterviewSession] = None
-    final_report: str = ""  # 综合评估报告
+    # 最近一条回答
+    last_answer: Optional[str] = None
+
+    final_report: str = ""  # 综合评估报告、
+    save_file_path: Optional[str] = None  # 保存的文件路径
     is_end: bool = False  # 是否结束面试
 
 
