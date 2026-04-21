@@ -39,6 +39,11 @@ def render_sidebar():
                                     st.session_state["selected_record"] = str(
                                         record.file_path
                                     )
+                                    st.session_state["last_interview_mode"] = (
+                                        st.session_state.get(
+                                            "interview_mode", "knowledge"
+                                        )
+                                    )
                                     st.session_state["view_mode"] = "record"
                                     st.rerun()
                             with col2:

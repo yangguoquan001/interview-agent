@@ -52,6 +52,8 @@ def render_record_viewer():
     with col_back:
         if st.button("← 返回", use_container_width=True):
             st.session_state["view_mode"] = "chat"
+            last_mode = st.session_state.get("last_interview_mode", "knowledge")
+            st.session_state["interview_mode"] = last_mode
             st.session_state.pop("selected_record", None)
             st.rerun()
 
@@ -172,9 +174,7 @@ def render_chat_window():
                 with st.chat_message("user"):
                     st.markdown(prompt)
 
-                st.session_state["messages"].append(
-                    {"role": "user", "content": prompt}
-                )
+                st.session_state["messages"].append({"role": "user", "content": prompt})
 
                 service = st.session_state["interview_service"]
                 config = service.get_config()
