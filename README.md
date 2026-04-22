@@ -39,19 +39,35 @@ uv sync
 
 ### 2. 配置环境变量
 
-创建 `.env` 文件，配置 LLM API:
+创建 `.env` 文件:
 
 ```env
+# LLM 配置
 LLM_API_KEY=your_api_key_here
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL_NAME=gpt-4o-mini
+
+# 知识库路径 (知识面试模式使用)
+# 支持配置多个路径，使用 Python list 语法
+FILE_DIRS=["D:/docs/python-guide", "D:/docs/streamlit-handbook"]
 ```
 
-### 3. 运行应用
+### 3. 准备知识库
+
+知识面试模式需要提前准备 Markdown 文档知识库:
+
+```bash
+# 克隆或下载你的知识库文档到配置路径
+git clone https://github.com/your/knowledge-base.git D:/docs/python-guide
+```
+
+### 4. 运行应用
 
 ```bash
 uv run streamlit run web_app.py
 ```
+
+**注意**: `FILE_DIRS` 使用 Python list 语法配置多个路径。系统会从配置的路径中扫描所有 `.md` 文件并随机选取作为面试题来源。
 
 ## 项目结构
 
