@@ -47,14 +47,15 @@ def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
     if not resume_info or not job_description:
         return {"error": "缺少简历或JD信息"}
 
-    # question_list = generate_questions(
-    #     resume_info.model_dump() if hasattr(resume_info, "model_dump") else resume_info,
-    #     job_description.model_dump()
-    #     if hasattr(job_description, "model_dump")
-    #     else job_description,
-    # )
-    # 使用以上数据mock生成的面试问题 TODO: 实际使用时，需要从数据库中获取简历和JD
-    question_list = ['在“智能聊天机器人系统”项目中，你提到构建了基于大模型的知识库问答。请具体说明你在向量检索阶段采用了何种分块（Chunking）策略来处理长文档？在面对检索结果与用户问题相关性不高的情况时，你是如何通过重排序（Re-ranking）或提示词工程来优化最终回答质量的？', '针对 JD 中强调的“工具调用与 API 对接”，在“咨询师培训系统”中你使用了 functioncall 能力。当大模型生成的参数与实际 API 接口定义不一致导致调用失败时，你设计了怎样的重试机制或错误恢复流程（例如：是否引入中间校验层或让模型自我修正），以保证对话链路的稳定性？']
+    question_list = generate_questions(
+        resume_info.model_dump() if hasattr(resume_info, "model_dump") else resume_info,
+        job_description.model_dump()
+        if hasattr(job_description, "model_dump")
+        else job_description,
+    )
+    # 模拟数据
+    # question_list = ['在“智能聊天机器人系统”项目中，你提到构建了基于大模型的知识库问答。请具体说明你在向量检索阶段采用了何种分块（Chunking）策略来处理长文档？在面对检索结果与用户问题相关性不高的情况时，你是如何通过重排序（Re-ranking）或提示词工程来优化最终回答质量的？', '针对 JD 中强调的“工具调用与 API 对接”，在“咨询师培训系统”中你使用了 functioncall 能力。当大模型生成的参数与实际 API 接口定义不一致导致调用失败时，你设计了怎样的重试机制或错误恢复流程（例如：是否引入中间校验层或让模型自我修正），以保证对话链路的稳定性？']
+    print("问题列表:", question_list)
     question_records = []
     for question in question_list:
         question_records.append(QuestionRecord(questions=[question]))

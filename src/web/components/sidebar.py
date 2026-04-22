@@ -25,9 +25,9 @@ def render_sidebar():
 
         for source, records_by_date in records_by_source.items():
             source_label = "💬 知识面试" if source == "records" else "📄 简历面试"
-            with st.expander(source_label, expanded=True):
+            with st.expander(source_label, expanded=False):
                 for date_str, records in records_by_date.items():
-                    with st.expander(f"📅 {date_str}", expanded=True):
+                    with st.expander(f"📅 {date_str}", expanded=False):
                         for record in records:
                             col1, col2 = st.columns([3, 1], vertical_alignment="center")
                             with col1:

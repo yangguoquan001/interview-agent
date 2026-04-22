@@ -53,7 +53,6 @@ def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
     last_answer = state.get("last_answer", "")
     if last_answer:
         current_answers.append(last_answer)    
-    print(current_questions, current_answers)
     # --- 情况 A: 开启新题 (此时 answer 为空) ---
     # 场景：从 questioner 刚进来，或者从 summary 刚跳过来
     if not last_answer:
@@ -77,9 +76,7 @@ def resume_chatter_node(state: ResumeAgentState) -> Dict[str, Any]:
     #     next_question = '好的，下一个问题。'
     next_question = next_question.replace('好的，下一个问题。', '')
 
-    print("next_question:", next_question)
     if next_question:
-        print("进入next_question")
         current_questions.append(next_question)
         follow_up_count += 1
         curr_question_record.follow_up_count = follow_up_count

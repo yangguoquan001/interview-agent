@@ -185,7 +185,7 @@ def  render_resume_interview_page(session_state: dict | None):
                                     placeholder = st.empty()
                                     placeholder.markdown(f"*{label}* ⏳")
 
-                            if msg_chunk.content:
+                            if msg_chunk.content and node_name in ["resume_chatter"]:
                                 full_content += msg_chunk.content
                                 placeholder.markdown(full_content + "▌")
 
