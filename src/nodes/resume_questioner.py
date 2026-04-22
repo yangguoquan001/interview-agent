@@ -6,6 +6,7 @@ from config import prompts
 from src.schemas.states import ResumeAgentState
 from src.schemas.data_models import QuestionRecord, QuestionsOutput
 from src.utils.llm_fatory import get_chat_model
+from src.utils.logger import logger
 
 
 def generate_questions(
@@ -31,11 +32,11 @@ def generate_questions(
                 content=prompts.RESUME_QUESTIONER_PROMPT_TEMPLATE.format(
                     resume_info=resume_str,
                     job_description=jd_str,
-                    ),
-                )
+                ),
+            ),
         ]
     )
-    
+
     return result.question_list
 
 
@@ -53,9 +54,7 @@ def resume_questioner_node(state: ResumeAgentState) -> Dict[str, Any]:
         if hasattr(job_description, "model_dump")
         else job_description,
     )
-    # 模拟数据
-    # question_list = ['在“智能聊天机器人系统”项目中，你提到构建了基于大模型的知识库问答。请具体说明你在向量检索阶段采用了何种分块（Chunking）策略来处理长文档？在面对检索结果与用户问题相关性不高的情况时，你是如何通过重排序（Re-ranking）或提示词工程来优化最终回答质量的？', '针对 JD 中强调的“工具调用与 API 对接”，在“咨询师培训系统”中你使用了 functioncall 能力。当大模型生成的参数与实际 API 接口定义不一致导致调用失败时，你设计了怎样的重试机制或错误恢复流程（例如：是否引入中间校验层或让模型自我修正），以保证对话链路的稳定性？']
-    print("问题列表:", question_list)
+    logger.info(f"问题列表: {question_list}")
     question_records = []
     for question in question_list:
         question_records.append(QuestionRecord(questions=[question]))

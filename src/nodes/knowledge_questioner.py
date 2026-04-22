@@ -7,6 +7,7 @@ from config import prompts
 from src.schemas.enums import DifficultyLevel
 from src.schemas.states import KnowledgeAgentState
 from src.utils.llm_fatory import get_chat_model
+from src.utils.logger import logger
 
 
 def generate_questions_node(state: KnowledgeAgentState):
@@ -51,11 +52,11 @@ def generate_questions_node(state: KnowledgeAgentState):
 
     topic_match = re.search(r"^## 主题：\s*(.*)", raw_text, re.MULTILINE)
     topic = topic_match.group(1).strip() if topic_match else "未知主题"
-    print(f"raw_text: {raw_text}\n")
+    logger.debug(f"raw_text: {raw_text}")
     question_match = re.search(r"## 面试题：\s*\n?(.*)", raw_text, re.DOTALL)
     question = question_match.group(1).strip() if question_match else "未知题目"
 
-    print(f"\n🌟 难度: [{difficulty_level}] | 主题: {topic} | 来源: {file_path}")
+    logger.info(f"🌟 难度: [{difficulty_level}] | 主题: {topic} | 来源: {file_path}")
 
     remaining = state["files_to_read"][1:]
     return {

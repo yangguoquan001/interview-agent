@@ -1,10 +1,16 @@
 import datetime
 import re
 
-from langchain_core.messages import HumanMessage, AIMessage, RemoveMessage, SystemMessage
+from langchain_core.messages import (
+    HumanMessage,
+    AIMessage,
+    RemoveMessage,
+    SystemMessage,
+)
 from pathlib import Path
 
 from src.schemas.states import KnowledgeAgentState
+from src.utils.logger import logger
 
 
 def save_node(state: KnowledgeAgentState):
@@ -26,14 +32,14 @@ def save_node(state: KnowledgeAgentState):
 
     # 3. 构造 Markdown 内容
     md_lines = [
-        f"# 面试练习记录: {topic}", 
-        f"- **日期**: {datetime.datetime.now().isoformat()}", 
-        f"- **难度**: {state.get('difficulty')}", 
+        f"# 面试练习记录: {topic}",
+        f"- **日期**: {datetime.datetime.now().isoformat()}",
+        f"- **难度**: {state.get('difficulty')}",
         f"- **来源文件**: {state.get('current_file', '无')}",
         f"- **线程ID**: {state.get('thread_id', '无')}",
-        "---"
+        "---",
     ]
-    
+
     for msg in state["messages"]:
         if isinstance(msg, SystemMessage):
             # 这里的 System Prompt 可以选存或不存，建议存一下背景
@@ -49,8 +55,8 @@ def save_node(state: KnowledgeAgentState):
     # 4. 写入文件
     with open(file_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
-    
-    print(f"💾 [系统]: 当前练习已保存至 {file_path}")
-    
+
+    logger.info(f"💾 [系统]: 当前练习已保存至 {file_path}")
+
     delete_msgs = [RemoveMessage(id=m.id) for m in state["messages"]]
     return {"messages": delete_msgs}
